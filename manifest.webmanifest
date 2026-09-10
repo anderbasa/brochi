@@ -1,0 +1,16 @@
+{
+  "name": "Nuestra lista",
+  "short_name": "Nuestra lista",
+  "description": "Nuestra lista de planes y recuerdos, solo para los dos.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7efe6",
+  "theme_color": "#f7efe6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
