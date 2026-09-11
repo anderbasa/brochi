@@ -397,12 +397,13 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 }
 .bloque-memoria .tarjeta-recuerdo-mini-txt span { -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* ---- Sorpréndeme ---- */
+/* ---- Sorpréndeme / acciones de Inicio ---- */
+.acciones-home { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .btn-sorpresa {
   display: block; width: 100%; text-align: center;
   border: 1px dashed var(--terracota); background: color-mix(in srgb, var(--terracota) 8%, var(--papel));
   color: var(--terracota-oscuro); font-weight: 700; font-size: 15px;
-  border-radius: var(--radio); padding: 14px; cursor: pointer; margin-top: 4px;
+  border-radius: var(--radio); padding: 14px; cursor: pointer;
 }
 .btn-sorpresa:active { transform: scale(.98); }
 .sorpresa { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
@@ -412,6 +413,25 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 .sorpresa-tit { font-weight: 700; font-size: 17px; margin: 0; }
 .sorpresa-nota { color: var(--tinta-suave); margin: 0; white-space: pre-wrap; }
 .sorpresa .form-acciones { width: 100%; justify-content: center; }
+
+/* ---- Countdown grande del próximo plan ---- */
+.hero-cuenta {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  text-decoration: none; color: inherit; gap: 2px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--terracota) 14%, var(--papel)), var(--papel));
+  border: 1px solid var(--linea); border-radius: var(--radio);
+  padding: 20px 16px; margin-bottom: 16px;
+}
+.hero-cuenta-et { font-size: 12px; font-weight: 700; color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .04em; }
+.hero-cuenta-numero { font-family: "Fraunces", serif; font-size: 52px; font-weight: 600; color: var(--terracota-oscuro); line-height: 1.1; }
+.hero-cuenta-unidad { font-size: 14px; font-weight: 700; color: var(--tinta-suave); margin-top: -4px; }
+.hero-cuenta-tit { font-size: 15px; font-weight: 700; margin-top: 6px; }
+
+/* ---- Resumen del año ---- */
+.resumen { display: flex; flex-direction: column; gap: 14px; }
+.resumen h3 { font-size: 20px; text-align: center; }
+.resumen-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.resumen-lista li { font-size: 14px; padding: 10px 12px; background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio-s); }
 
 /* ---- Reacción ❤️ ---- */
 .corazon-mini {

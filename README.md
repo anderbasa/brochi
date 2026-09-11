@@ -10,8 +10,10 @@ NFC al móvil (la pegatina apunta a la URL de GitHub Pages).
   Reacción ❤️ y buscador también.
 - **Mapa** con un pin por cada recuerdo que tenga ubicación.
 - **Inicio**: contador de "días juntos", "un día como hoy" (recuerdos de la
-  misma fecha en años anteriores), próximos planes, último recuerdo,
-  contadores y "🎲 Sorpréndeme" (elige un plan pendiente al azar).
+  misma fecha en años anteriores), countdown grande del próximo plan con
+  fecha, último recuerdo, contadores, "🎲 Sorpréndeme" (plan pendiente al
+  azar), "🎞️ Recuerdo al azar" y "📊 Resumen" (planes cumplidos, categoría
+  favorita, sitios visitados, primer recuerdo, el más querido...).
 - **Modo oscuro automático** (sigue el ajuste del sistema del móvil).
 
 Los planes y recuerdos se sincronizan en vivo entre los dos móviles con

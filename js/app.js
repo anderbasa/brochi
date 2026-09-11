@@ -15,6 +15,7 @@ import {
   fechaLegible,
   cuentaAtras,
   diasDesde,
+  diasHasta,
 } from "./ui.js";
 import { renderLista } from "./vista-lista.js";
 import { renderRecuerdos } from "./vista-recuerdos.js";
@@ -208,27 +209,30 @@ function renderHome(cont) {
       );
     }
 
-    // Próximos planes con fecha
+    // Próximo plan con fecha, destacado en grande — y el resto, en lista.
     const proximos = pendientes
       .filter((p) => p.fechaObjetivo)
-      .sort((a, b) => a.fechaObjetivo.localeCompare(b.fechaObjetivo))
-      .slice(0, 3);
+      .sort((a, b) => a.fechaObjetivo.localeCompare(b.fechaObjetivo));
     if (proximos.length) {
-      cont.append(
-        el("section", { class: "bloque" },
-          el("div", { class: "bloque-cab" },
-            el("h3", { text: "Próximos" }),
-            el("a", { href: "#lista", class: "ver-todo", text: "Ver lista" })
-          ),
-          ...proximos.map((p) => {
-            const ca = cuentaAtras(p.fechaObjetivo);
-            return el("a", { href: "#lista", class: "fila-mini" },
-              el("span", { class: "fila-mini-tit", text: p.titulo }),
-              ca && el("span", { class: `badge ${ca.clase}`, text: ca.texto })
-            );
-          })
-        )
-      );
+      cont.append(heroCuenta(proximos[0]));
+      const resto = proximos.slice(1, 4);
+      if (resto.length) {
+        cont.append(
+          el("section", { class: "bloque" },
+            el("div", { class: "bloque-cab" },
+              el("h3", { text: "También pronto" }),
+              el("a", { href: "#lista", class: "ver-todo", text: "Ver lista" })
+            ),
+            ...resto.map((p) => {
+              const ca = cuentaAtras(p.fechaObjetivo);
+              return el("a", { href: "#lista", class: "fila-mini" },
+                el("span", { class: "fila-mini-tit", text: p.titulo }),
+                ca && el("span", { class: `badge ${ca.clase}`, text: ca.texto })
+              );
+            })
+          )
+        );
+      }
     }
 
     // Último recuerdo
@@ -260,10 +264,18 @@ function renderHome(cont) {
           el("a", { href: "#lista", class: "btn-primario", text: "Añadir el primero" })
         )
       );
-    } else if (pendientes.length) {
-      cont.append(
-        el("button", { class: "btn-sorpresa", type: "button", onclick: sorprenderme }, "🎲 Sorpréndeme")
-      );
+    } else {
+      const acciones = el("div", { class: "acciones-home" });
+      if (pendientes.length) {
+        acciones.append(el("button", { class: "btn-sorpresa", type: "button", onclick: sorprenderme }, "🎲 Sorpréndeme"));
+      }
+      if (store.recuerdos.length) {
+        acciones.append(el("button", { class: "btn-sorpresa", type: "button", onclick: recuerdoAlAzar }, "🎞️ Recuerdo al azar"));
+      }
+      if (hechos.length || store.recuerdos.length) {
+        acciones.append(el("button", { class: "btn-sorpresa", type: "button", onclick: verResumen }, "📊 Resumen"));
+      }
+      if (acciones.childNodes.length) cont.append(acciones);
     }
   };
 
@@ -309,6 +321,113 @@ function mostrarSorpresa(pendientes) {
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: () => mostrarSorpresa(pendientes) }, "Otro"),
       el("a", { class: "btn-primario", href: "#lista", onclick: cerrarModal }, "Ver en la lista")
+    )
+  );
+  abrirModal(cont);
+}
+
+// ---- Countdown grande del próximo plan --------------------------------
+
+function heroCuenta(plan) {
+  const dias = diasHasta(plan.fechaObjetivo);
+  const cat = CATEGORIAS.find((c) => c.id === plan.categoria);
+  let numero, etiqueta;
+  if (dias < 0) {
+    numero = "😅";
+    etiqueta = `Se pasó hace ${-dias} ${-dias === 1 ? "día" : "días"}`;
+  } else if (dias === 0) {
+    numero = "🎉";
+    etiqueta = "¡Es hoy!";
+  } else if (dias === 1) {
+    numero = "🙌";
+    etiqueta = "¡Es mañana!";
+  } else {
+    numero = String(dias);
+    etiqueta = "días";
+  }
+  return el("a", { href: "#lista", class: "hero-cuenta" },
+    el("span", { class: "hero-cuenta-et", text: "Próximo plan" }),
+    el("span", { class: "hero-cuenta-numero", text: numero }),
+    el("span", { class: "hero-cuenta-unidad", text: etiqueta }),
+    el("span", { class: "hero-cuenta-tit" }, cat ? `${cat.emoji} ` : "", plan.titulo)
+  );
+}
+
+// ---- Recuerdo al azar ------------------------------------------------
+
+function recuerdoAlAzar() {
+  if (!store.recuerdos.length) return;
+  mostrarRecuerdoAzar();
+}
+
+function mostrarRecuerdoAzar() {
+  vibrar(20);
+  const r = store.recuerdos[Math.floor(Math.random() * store.recuerdos.length)];
+  const cont = el("div", { class: "sorpresa" },
+    el("div", { class: "sorpresa-emoji", text: "🎞️" }),
+    el("h3", { text: "¿Te acuerdas?" }),
+    r.fotos && r.fotos[0]
+      ? el("img", { class: "sorpresa-foto", src: r.fotos[0], alt: "" })
+      : el("div", { class: "sin-foto-mini", text: "📸" }),
+    el("p", { class: "sorpresa-tit", text: r.titulo }),
+    el("p", { class: "sorpresa-nota sub", text: fechaLegible(fechaTS(r.creadoEn)) }),
+    r.nota && el("p", { class: "sorpresa-nota", text: r.nota }),
+    el("div", { class: "form-acciones" },
+      el("button", { type: "button", class: "btn-plano", onclick: mostrarRecuerdoAzar }, "Otro"),
+      el("a", { class: "btn-primario", href: "#recuerdos", onclick: cerrarModal }, "Ver todos")
+    )
+  );
+  abrirModal(cont);
+}
+
+// ---- Resumen del año --------------------------------------------------
+
+function calcularResumen() {
+  const hechos = store.planes.filter((p) => p.estado === "hecho");
+  const porCategoria = {};
+  hechos.forEach((p) => {
+    if (p.categoria) porCategoria[p.categoria] = (porCategoria[p.categoria] || 0) + 1;
+  });
+  const [catTopId, catTopN] =
+    Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0] || [];
+  const catTop = CATEGORIAS.find((c) => c.id === catTopId);
+
+  const totalFotos = store.recuerdos.reduce((n, r) => n + (r.fotos?.length || 0), 0);
+  const sitios = new Set(
+    store.recuerdos.map((r) => r.ubicacion?.texto?.trim().toLowerCase()).filter(Boolean)
+  );
+
+  const conFecha = store.recuerdos
+    .map((r) => ({ r, f: fechaTS(r.creadoEn) }))
+    .filter(({ f }) => f)
+    .sort((a, b) => a.f - b.f);
+  const primero = conFecha[0]?.r || null;
+
+  const masQuerido = store.recuerdos
+    .map((r) => ({ r, likes: Object.values(r.reacciones || {}).filter(Boolean).length }))
+    .filter(({ likes }) => likes > 0)
+    .sort((a, b) => b.likes - a.likes)[0];
+
+  return { totalHechos: hechos.length, catTop, catTopN, totalFotos, sitiosN: sitios.size, primero, masQuerido };
+}
+
+function verResumen() {
+  const r = calcularResumen();
+  const cont = el("div", { class: "resumen" },
+    el("h3", { text: "📊 Vuestro resumen" }),
+    el("div", { class: "contadores" },
+      contador(r.totalHechos, "planes cumplidos"),
+      contador(store.recuerdos.length, "recuerdos"),
+      contador(r.totalFotos, "fotos")
+    ),
+    el("ul", { class: "resumen-lista" },
+      r.catTop && el("li", { text: `${r.catTop.emoji} Vuestra categoría favorita: ${r.catTop.etiqueta} (${r.catTopN} ${r.catTopN === 1 ? "vez" : "veces"})` }),
+      r.sitiosN > 0 && el("li", { text: `📍 ${r.sitiosN} ${r.sitiosN === 1 ? "sitio distinto" : "sitios distintos"} con recuerdos` }),
+      r.primero && el("li", { text: `🌱 Vuestro primer recuerdo: ${fechaLegible(fechaTS(r.primero.creadoEn))}` }),
+      r.masQuerido && el("li", { text: `❤️ El recuerdo más querido: "${r.masQuerido.r.titulo}" (${r.masQuerido.likes} ❤️)` })
+    ),
+    el("div", { class: "form-acciones" },
+      el("button", { type: "button", class: "btn-primario", onclick: cerrarModal }, "Cerrar")
     )
   );
   abrirModal(cont);

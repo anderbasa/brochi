@@ -148,6 +148,18 @@ export function diasDesde(fechaISO) {
   return Math.max(0, Math.round((inicioHoy - inicio) / 86400000));
 }
 
+// Días HASTA una fecha objetivo (puede ser negativo si ya pasó) — para el
+// countdown grande de Inicio. A diferencia de diasDesde(), aquí el signo
+// importa.
+export function diasHasta(fechaISO) {
+  if (!fechaISO) return null;
+  const [y, m, d] = fechaISO.split("-").map(Number);
+  const obj = new Date(y, m - 1, d);
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  return Math.round((obj - inicioHoy) / 86400000);
+}
+
 // Vibración corta como confirmación física (Android; en iPhone Safari no
 // existe esta API y esto no hace nada — no es un fallo, es la plataforma).
 export function vibrar(patron = 30) {
