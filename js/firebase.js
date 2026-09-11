@@ -48,9 +48,18 @@ import { subirImagen, borrarImagen, borrarCarpeta } from "./fotos.js";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+function sinPlaceholders(obj) {
+  return !Object.values(obj).some((v) => String(v).startsWith("PEGA_AQUI"));
+}
+
+export function firebaseListo() {
+  return sinPlaceholders(firebaseConfig);
+}
+export function supabaseListo() {
+  return sinPlaceholders(supabaseConfig);
+}
 export function isConfigured() {
-  const valores = [...Object.values(firebaseConfig), ...Object.values(supabaseConfig)];
-  return !valores.some((v) => String(v).startsWith("PEGA_AQUI"));
+  return firebaseListo() && supabaseListo();
 }
 
 // ---- Lectura en vivo -------------------------------------------------------

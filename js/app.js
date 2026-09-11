@@ -2,7 +2,7 @@
 // (planes y recuerdos) que se mantiene sincronizado en vivo con Firestore.
 
 import { PERSONAS } from "./config.js";
-import { isConfigured, subscribePlanes, subscribeRecuerdos } from "./firebase.js";
+import { isConfigured, firebaseListo, supabaseListo, subscribePlanes, subscribeRecuerdos } from "./firebase.js";
 import { resolverDesdeURL, guardarPersona, otra } from "./identidad.js";
 import { el, limpiar, fechaTS, fechaLegible, cuentaAtras } from "./ui.js";
 import { renderLista } from "./vista-lista.js";
@@ -75,12 +75,21 @@ function pantallaQuienEres() {
 
 function pantallaConfig() {
   limpiar(app);
+  const faltaFirebase = !firebaseListo();
+  const faltaSupabase = !supabaseListo();
+  let mensaje;
+  if (faltaFirebase && faltaSupabase) {
+    mensaje = 'Faltan las claves de <strong>Firebase</strong> y de <strong>Supabase</strong> en <code>js/config.js</code>.';
+  } else if (faltaFirebase) {
+    mensaje = 'Falta la parte de <strong>Firebase</strong> en <code>js/config.js</code> (planes y recuerdos).';
+  } else {
+    mensaje = 'Firebase ya está listo ✓ — falta la parte de <strong>Supabase</strong> en <code>js/config.js</code> (para las fotos).';
+  }
   app.append(el("div", { class: "portada" },
     el("div", { class: "logo-grande", text: "🔧" }),
-    el("h1", { text: "Falta configurar Firebase" }),
-    el("p", { class: "sub", html:
-      'Edita <code>js/config.js</code> con las claves de tu proyecto de Firebase. ' +
-      'Tienes los pasos en el <code>README.md</code>.' }),
+    el("h1", { text: "Falta terminar de configurar" }),
+    el("p", { class: "sub", html: mensaje }),
+    el("p", { class: "sub", html: 'Tienes los pasos en el <code>README.md</code>.' }),
   ));
 }
 
