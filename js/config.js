@@ -45,4 +45,4 @@ export const CATEGORIAS = [
 // Fecha desde la que contar los días juntos en el contador de Inicio
 // ("YYYY-MM-DD"). Pon aquí vuestra fecha (aniversario, primera cita...).
 // Déjalo en `null` para ocultar el contador si no queréis usarlo.
-export const FECHA_INICIO = "2020-06-15";
+export const FECHA_INICIO = "2026-07-22";
