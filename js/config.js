@@ -18,8 +18,8 @@ export const firebaseConfig = {
 // Ver README.md, sección 1.3. La "anon key" es pública a propósito (como
 // las claves de Firebase): la protección real son las políticas del bucket.
 export const supabaseConfig = {
-  url: "PEGA_AQUI_supabaseUrl",
-  anonKey: "PEGA_AQUI_supabaseAnonKey",
+  url: "https://clmavzyscvgjpjewnfoj.supabase.co/rest/v1/",
+  anonKey: "sb_publishable_gvbeeyIWRk6CzKZsbQw8mg_3Xi1vev0",
 };
 
 // Las dos personas de la app. Cada pegatina NFC graba la URL con su "id" en el
