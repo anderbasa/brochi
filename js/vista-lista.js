@@ -17,6 +17,7 @@ import {
   abrirModal,
   cerrarModal,
   aviso,
+  mensajeError,
   confirmar,
   cuentaAtras,
   campoFotos,
@@ -186,7 +187,7 @@ function formPlan(plan = null) {
       aviso(editando ? "Plan actualizado" : "Plan añadido");
     } catch (err) {
       console.error(err);
-      aviso("No se pudo guardar", "error");
+      aviso(mensajeError(err), "error");
       guardar.disabled = false;
       guardar.textContent = editando ? "Guardar" : "Añadir plan";
     }
@@ -238,7 +239,7 @@ function formRecuerdo(plan) {
       lanzarConfeti();
     } catch (err) {
       console.error(err);
-      aviso("No se pudo guardar", "error");
+      aviso(mensajeError(err), "error");
       guardar.disabled = false;
       guardar.textContent = "Guardar recuerdo";
     }

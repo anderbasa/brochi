@@ -15,6 +15,7 @@ import {
   abrirModal,
   cerrarModal,
   aviso,
+  mensajeError,
   confirmar,
   fechaTS,
   fechaLegible,
@@ -155,7 +156,7 @@ function formEditar(r) {
       aviso("Recuerdo actualizado");
     } catch (err) {
       console.error(err);
-      aviso("No se pudo guardar", "error");
+      aviso(mensajeError(err), "error");
       guardar.disabled = false;
       guardar.textContent = "Guardar";
     }

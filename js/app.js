@@ -29,17 +29,7 @@ export const store = {
 
 export const compañera = () => otra(store.persona.id);
 
-// ---- Arranque ------------------------------------------------------
-
 const app = document.getElementById("app");
-
-if (!isConfigured()) {
-  pantallaConfig();
-} else {
-  const persona = resolverDesdeURL();
-  if (persona) iniciar(persona);
-  else pantallaQuienEres();
-}
 
 function iniciar(persona) {
   store.set({ persona });
@@ -259,3 +249,20 @@ function observarSalida(cont, off) {
 }
 
 export { observarSalida };
+
+// ---- Arranque -----------------------------------------------------
+// Va al final a propósito: usa `TABS`, `vista` y las funciones de arriba, y
+// en un módulo ES las `const`/`let` no están disponibles hasta que su propia
+// línea se ejecuta (aunque las `function` sí están disponibles desde el
+// principio). Si este bloque fuera lo primero del archivo, la primerísima
+// vez que alguien ya tiene una persona guardada (o entra con ?yo=...) el
+// arranque intentaría usar `TABS`/`vista` antes de tiempo y la app se
+// quedaría en blanco sin ningún aviso.
+
+if (!isConfigured()) {
+  pantallaConfig();
+} else {
+  const persona = resolverDesdeURL();
+  if (persona) iniciar(persona);
+  else pantallaQuienEres();
+}

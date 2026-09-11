@@ -54,6 +54,13 @@ export function cerrarModal() {
 
 // ---- Aviso corto (toast) ---------------------------------------------
 
+// Mensaje corto y legible a partir de un error, para que el aviso diga el
+// motivo real (p. ej. "el bucket no existe") en vez de un genérico e inútil.
+export function mensajeError(err, prefijo = "No se pudo guardar") {
+  const texto = (err && (err.message || err.error_description || err.error)) || String(err || "");
+  return texto ? `${prefijo}: ${texto}`.slice(0, 160) : prefijo;
+}
+
 let toastTimer;
 export function aviso(texto, tipo = "ok") {
   let t = document.querySelector(".toast");
@@ -65,7 +72,7 @@ export function aviso(texto, tipo = "ok") {
   t.dataset.tipo = tipo;
   t.classList.add("visible");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("visible"), 2800);
+  toastTimer = setTimeout(() => t.classList.remove("visible"), tipo === "error" ? 6000 : 2800);
 }
 
 // ---- Confirmación -----------------------------------------------------
@@ -79,12 +86,16 @@ export function confirmar(mensaje, { textoOk = "Borrar", peligro = true } = {}) 
       el(
         "div",
         { class: "acciones" },
-        el("button", { class: "btn-plano", onclick: () => (cerrarModal(), resolve(false)) }, "Cancelar"),
+        el("button", { class: "btn-plano", onclick: () => (resolve(false), cerrarModal()) }, "Cancelar"),
         el(
           "button",
           {
             class: peligro ? "btn-peligro" : "btn-primario",
-            onclick: () => (cerrarModal(), resolve(true)),
+            // Resolver ANTES de cerrar: cerrarModal() dispara su propio
+            // onCerrar (resolve(false)) y una Promise se queda con la
+            // primera resolución — si cerráramos primero, "Borrar" también
+            // acabaría resolviendo `false`.
+            onclick: () => (resolve(true), cerrarModal()),
           },
           textoOk
         )
