@@ -5,11 +5,11 @@
 // protege los datos son las Reglas de Seguridad de Firestore y Storage
 // (también en el README), no estas claves.
 export const firebaseConfig = {
-  apiKey: "PEGA_AQUI_apiKey",
-  authDomain: "PEGA_AQUI_authDomain",
-  projectId: "PEGA_AQUI_projectId",
-  messagingSenderId: "PEGA_AQUI_messagingSenderId",
-  appId: "PEGA_AQUI_appId",
+  apiKey: "AIzaSyApC9XsdRHYqiQzrqwy6JKYnOOZcshUdZA",
+  authDomain: "nuestra-lista-7b4a6.firebaseapp.com",
+  projectId: "nuestra-lista-7b4a6",
+  messagingSenderId: "609824735031",
+  appId: "1:609824735031:web:2df034770a8a5e945524b2",
 };
 
 // Claves del proyecto de Supabase — solo se usan para las FOTOS (Supabase
@@ -30,7 +30,7 @@ export const supabaseConfig = {
 // grabadas las pegatinas.
 export const PERSONAS = {
   ander: { id: "ander", nombre: "Ander", color: "#c2703d" },
-  pareja: { id: "pareja", nombre: "Mi pareja", color: "#7a9b76" },
+  pareja: { id: "pareja", nombre: "Naia", color: "#7a9b76" },
 };
 
 // Categorías disponibles al crear un plan (icono + etiqueta).
