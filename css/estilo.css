@@ -290,8 +290,15 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 .foto-actual { width: 100%; height: auto; }
 .foto-actual img { height: 160px; }
 
-.geo-fila { display: flex; flex-direction: column; gap: 6px; }
-.geo-estado { font-size: 13px; color: var(--tinta-suave); }
+.geo-fila { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---- Selector de ubicación (mapa mini) ---- */
+.campo-ubicacion { display: flex; flex-direction: column; gap: 8px; }
+.mapa-mini-ayuda { margin: 0; font-size: 13px; color: var(--tinta-suave); }
+.mapa-mini {
+  width: 100%; height: 180px; border-radius: var(--radio-s);
+  overflow: hidden; border: 1px solid var(--linea); background: var(--crema);
+}
 
 /* ---- Confirmar ---- */
 .confirmar { display: flex; flex-direction: column; gap: 16px; }

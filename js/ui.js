@@ -190,3 +190,100 @@ export function campoFotos({ multiple = true, etiqueta = "Añadir fotos" } = {})
     archivos: () => files,
   };
 }
+
+// ---- Selector de ubicación (mapa con pin) ----------------------------
+
+// Mapa pequeño con un pin que se puede tocar/arrastrar para marcar
+// exactamente dónde fue el recuerdo — no depende de dónde esté el móvil en
+// ese momento (a diferencia de "usar mi ubicación actual", que sigue
+// disponible como atajo). Devuelve { nodo, valor() → {lat,lng}|null }.
+export function campoUbicacion({ lat = null, lng = null } = {}) {
+  let valor = lat != null && lng != null ? { lat, lng } : null;
+  const CENTRO_DEFECTO = [40.4168, -3.7038]; // España, solo para encuadrar si no hay pin
+
+  const ayuda = el("p", {
+    class: "mapa-mini-ayuda",
+    text: valor
+      ? "Arrastra el pin o toca el mapa para moverlo."
+      : "Toca el mapa para marcar dónde fue, o usa tu ubicación actual.",
+  });
+  const caja = el("div", { class: "mapa-mini" });
+  const btnQuitar = el(
+    "button",
+    { type: "button", class: "btn-plano", hidden: !valor, onclick: () => quitarPin() },
+    "Quitar ubicación del mapa"
+  );
+  const btnGeo = el(
+    "button",
+    { type: "button", class: "btn-foto", onclick: () => irAMiUbicacion() },
+    "📍 Usar mi ubicación actual"
+  );
+
+  let mapa, marker;
+
+  function ponerPin(la, ln) {
+    valor = { lat: +la.toFixed(6), lng: +ln.toFixed(6) };
+    if (!marker) {
+      marker = L.marker([la, ln], { draggable: true }).addTo(mapa);
+      marker.on("dragend", () => {
+        const p = marker.getLatLng();
+        valor = { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6) };
+      });
+    } else {
+      marker.setLatLng([la, ln]);
+    }
+    btnQuitar.hidden = false;
+    ayuda.textContent = "Arrastra el pin o toca el mapa para moverlo.";
+  }
+
+  function quitarPin() {
+    if (marker && mapa) mapa.removeLayer(marker);
+    marker = null;
+    valor = null;
+    btnQuitar.hidden = true;
+    ayuda.textContent = "Toca el mapa para marcar dónde fue, o usa tu ubicación actual.";
+  }
+
+  function irAMiUbicacion() {
+    if (!navigator.geolocation) {
+      aviso("Este móvil no da ubicación", "error");
+      return;
+    }
+    btnGeo.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: la, longitude: ln } = pos.coords;
+        if (mapa) mapa.setView([la, ln], 15);
+        ponerPin(la, ln);
+        btnGeo.disabled = false;
+      },
+      (err) => {
+        btnGeo.disabled = false;
+        aviso(err.code === 1 ? "Permiso de ubicación denegado" : "No se pudo obtener tu ubicación", "error");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  if (typeof L === "undefined") {
+    ayuda.textContent = "No se pudo cargar el mapa (sin conexión) — puedes seguir escribiendo el lugar en texto.";
+  } else {
+    requestAnimationFrame(() => {
+      mapa = L.map(caja, { scrollWheelZoom: false }).setView(
+        valor ? [valor.lat, valor.lng] : CENTRO_DEFECTO,
+        valor ? 14 : 5
+      );
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap",
+        maxZoom: 19,
+      }).addTo(mapa);
+      if (valor) ponerPin(valor.lat, valor.lng);
+      mapa.on("click", (e) => ponerPin(e.latlng.lat, e.latlng.lng));
+    });
+  }
+
+  return {
+    nodo: el("div", { class: "campo-ubicacion" }, ayuda, caja, el("div", { class: "geo-fila" }, btnGeo, btnQuitar)),
+    valor: () => valor,
+  };
+}

@@ -20,6 +20,7 @@ import {
   fechaTS,
   fechaLegible,
   campoFotos,
+  campoUbicacion,
 } from "./ui.js";
 
 export function renderRecuerdos(cont) {
@@ -127,6 +128,7 @@ function formEditar(r) {
   const nota = el("textarea", { rows: 4, maxlength: 1000, placeholder: "Nota del recuerdo" }, r.nota || "");
   const lugar = el("input", { type: "text", maxlength: 160, value: r.ubicacion?.texto || "", placeholder: "Lugar (texto libre)" });
   const fotos = campoFotos({ multiple: true, etiqueta: "Añadir más fotos" });
+  const ubic = campoUbicacion({ lat: r.ubicacion?.lat ?? null, lng: r.ubicacion?.lng ?? null });
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar");
 
   const form = el("form", { class: "form" },
@@ -134,6 +136,7 @@ function formEditar(r) {
     campoL("Título", titulo),
     campoL("Nota", nota),
     campoL("Lugar", lugar),
+    campoL("Ubicación en el mapa", ubic.nodo),
     campoL("Fotos nuevas", fotos.nodo),
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: () => { cerrarModal(); detalle(r.id); } }, "Cancelar"),
@@ -147,9 +150,9 @@ function formEditar(r) {
     guardar.textContent = "Guardando…";
     try {
       const fotosBlobs = await comprimirVarias(fotos.archivos());
-      const ubic = r.ubicacion || {};
-      const ubicacion = lugar.value.trim() || ubic.lat != null
-        ? { texto: lugar.value.trim(), lat: ubic.lat ?? null, lng: ubic.lng ?? null }
+      const punto = ubic.valor();
+      const ubicacion = lugar.value.trim() || punto
+        ? { texto: lugar.value.trim(), lat: punto?.lat ?? null, lng: punto?.lng ?? null }
         : null;
       await editarRecuerdo(r.id, { titulo: titulo.value, nota: nota.value, ubicacion, fotosBlobs }, r.fotos);
       cerrarModal();
