@@ -19,8 +19,15 @@ const MAX_BYTES = 5 * 1024 * 1024; // coincide con el límite de tamaño del buc
 // solo falla si de verdad se intenta subir/borrar una foto sin configurar.
 let supabase;
 function cliente() {
-  if (!supabase) supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+  if (!supabase) supabase = createClient(urlBase(supabaseConfig.url), supabaseConfig.anonKey);
   return supabase;
+}
+
+// El panel "Data API" de Supabase a veces muestra la URL del endpoint REST
+// (con "/rest/v1/" al final) en vez de la URL base del proyecto que pide
+// `createClient`. Aceptamos las dos formas para no depender de cuál se copió.
+function urlBase(url) {
+  return String(url).replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
 }
 
 export async function subirImagen(blob, path) {
