@@ -41,3 +41,8 @@ export const CATEGORIAS = [
   { id: "aventura", etiqueta: "Aventura", emoji: "🏔️" },
   { id: "otro", etiqueta: "Otro", emoji: "✨" },
 ];
+
+// Fecha desde la que contar los días juntos en el contador de Inicio
+// ("YYYY-MM-DD"). Pon aquí vuestra fecha (aniversario, primera cita...).
+// Déjalo en `null` para ocultar el contador si no queréis usarlo.
+export const FECHA_INICIO = "2020-06-15";

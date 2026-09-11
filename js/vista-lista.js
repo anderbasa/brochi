@@ -21,14 +21,28 @@ import {
   confirmar,
   cuentaAtras,
   campoFotos,
+  vibrar,
+  skeleton,
 } from "./ui.js";
 
 let filtro = "pendiente"; // "pendiente" | "hecho"
+let busqueda = "";
+let categoriaFiltro = null;
 
 export function renderLista(cont) {
   const pintar = () => {
+    // Conserva el foco/cursor del buscador: al escribir, `input` dispara
+    // pintar() y esto reconstruye TODO el DOM (incluido un <input> nuevo);
+    // sin esto, cada letra tecleada perdería el foco.
+    const activo = document.activeElement;
+    const eraBuscador = activo?.classList.contains("buscador");
+    const cursor = eraBuscador ? activo.selectionStart : null;
+
     limpiar(cont);
-    const planes = store.planes.filter((p) => p.estado === filtro);
+    const planes = store.planes
+      .filter((p) => p.estado === filtro)
+      .filter((p) => !categoriaFiltro || p.categoria === categoriaFiltro)
+      .filter((p) => coincideBusqueda(p, busqueda));
 
     cont.append(
       el("div", { class: "segmentado" },
@@ -38,15 +52,22 @@ export function renderLista(cont) {
     );
 
     if (store.cargando) {
-      cont.append(el("p", { class: "cargando", text: "Cargando…" }));
+      cont.append(skeleton(3));
       return;
     }
 
+    if (store.planes.length > 3) {
+      cont.append(campoBusquedaYFiltro(pintar));
+    }
+
     if (!planes.length) {
+      const nada = busqueda.trim() || categoriaFiltro;
       cont.append(
         el("div", { class: "vacio" },
-          el("p", { text: filtro === "pendiente" ? "No hay planes pendientes." : "Todavía no habéis completado ninguno." }),
-          filtro === "pendiente" && el("button", { class: "btn-primario", onclick: () => formPlan() }, "Añadir un plan")
+          el("p", { text: nada
+            ? "Nada coincide con la búsqueda."
+            : filtro === "pendiente" ? "No hay planes pendientes." : "Todavía no habéis completado ninguno." }),
+          !nada && filtro === "pendiente" && el("button", { class: "btn-primario", onclick: () => formPlan() }, "Añadir un plan")
         )
       );
     } else {
@@ -56,11 +77,47 @@ export function renderLista(cont) {
     cont.append(
       el("button", { class: "fab", "aria-label": "Añadir plan", onclick: () => formPlan() }, "+")
     );
+
+    if (eraBuscador) {
+      const nuevo = cont.querySelector(".buscador");
+      if (nuevo) {
+        nuevo.focus();
+        if (cursor != null) nuevo.setSelectionRange(cursor, cursor);
+      }
+    }
   };
 
   pintar();
   const off = store.onChange(pintar);
   observarSalida(cont, off);
+}
+
+function coincideBusqueda(plan, texto) {
+  const q = texto.trim().toLowerCase();
+  if (!q) return true;
+  return plan.titulo.toLowerCase().includes(q) || (plan.nota || "").toLowerCase().includes(q);
+}
+
+function campoBusquedaYFiltro(pintar) {
+  const input = el("input", {
+    type: "search",
+    class: "buscador",
+    placeholder: "Buscar por título o nota…",
+    value: busqueda,
+  });
+  input.addEventListener("input", () => { busqueda = input.value; pintar(); });
+
+  const chips = el("div", { class: "chips-cat chips-filtro" },
+    ...CATEGORIAS.map((c) =>
+      el("button", {
+        type: "button",
+        class: "chip-cat" + (categoriaFiltro === c.id ? " activo" : ""),
+        onclick: () => { categoriaFiltro = categoriaFiltro === c.id ? null : c.id; pintar(); },
+      }, `${c.emoji} ${c.etiqueta}`)
+    )
+  );
+
+  return el("div", { class: "barra-filtro" }, input, chips);
 }
 
 function boton(valor, texto, n, pintar) {
@@ -236,6 +293,7 @@ function formRecuerdo(plan) {
       await completarPlan(plan, { nota: nota.value, ubicacion, fotosBlobs }, store.persona.id);
       cerrarModal();
       aviso("Recuerdo guardado 💛");
+      vibrar([25, 40, 25]);
       lanzarConfeti();
     } catch (err) {
       console.error(err);

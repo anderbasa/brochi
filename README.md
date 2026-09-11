@@ -5,10 +5,14 @@ cuentas, sin cuotas y solo para nosotros dos. Se abre acercando una pegatina
 NFC al móvil (la pegatina apunta a la URL de GitHub Pages).
 
 - **Lista de deseos** compartida: planes con nota, categoría, fecha y foto.
-  Pendientes / Hechos.
+  Pendientes / Hechos, con buscador y filtro por categoría.
 - **Recuerdos**: al completar un plan, se guarda con fotos, nota y lugar.
+  Reacción ❤️ y buscador también.
 - **Mapa** con un pin por cada recuerdo que tenga ubicación.
-- **Inicio** con el resumen: próximos planes, último recuerdo y contadores.
+- **Inicio**: contador de "días juntos", "un día como hoy" (recuerdos de la
+  misma fecha en años anteriores), próximos planes, último recuerdo,
+  contadores y "🎲 Sorpréndeme" (elige un plan pendiente al azar).
+- **Modo oscuro automático** (sigue el ajuste del sistema del móvil).
 
 Los planes y recuerdos se sincronizan en vivo entre los dos móviles con
 **Firestore** (Firebase); las fotos van a **Supabase Storage** (comprimidas
@@ -59,6 +63,9 @@ gestiona desde las webs de GitHub, Firebase y Supabase.
 5. De paso, en ese mismo archivo, cambia los **nombres** de `PERSONAS`
    (`Ander` / `Mi pareja`) por los reales. Deja los `id` (`ander`, `pareja`)
    tal cual si ya vas a grabar las pegatinas con ellos.
+6. Y cambia también `FECHA_INICIO` por vuestra fecha (aniversario, primera
+   cita...) en formato `"YYYY-MM-DD"` — es lo que muestra el contador de
+   "días juntos" en Inicio. Ponlo en `null` para ocultar ese contador.
 
 ---
 
@@ -168,7 +175,8 @@ inicio". Luego se abre a pantalla completa como una app normal.
 `completadoPor`, `recuerdoId`, `creadoEn`, `completadoEn`.
 
 **`recuerdos/{id}`** (Firestore): `planId`, `titulo`, `nota`, `fotos` (URL[]),
-`ubicacion` (`{texto, lat, lng}|null`), `creadoPor`, `creadoEn`.
+`ubicacion` (`{texto, lat, lng}|null`), `creadoPor`, `creadoEn`,
+`reacciones` (`{[personaId]: true}|undefined`, quién le ha dado ❤️).
 
 Fotos (bucket `fotos` de Supabase Storage): `planes/{planId}/…` y
 `recuerdos/{recuerdoId}/…`.

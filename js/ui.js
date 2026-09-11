@@ -120,6 +120,52 @@ export function fechaLegible(d) {
   return `${f.getDate()} ${MESES[f.getMonth()]} ${f.getFullYear()}`;
 }
 
+// Fecha relativa para cosas recientes ("hoy", "hace 3 días"...), y la fecha
+// legible normal para todo lo demás — así las tarjetas de Recuerdos se leen
+// más natural sin perder precisión cuando ya ha pasado tiempo.
+export function fechaRelativa(d) {
+  const f = d instanceof Date ? d : fechaTS(d);
+  if (!f) return "";
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const inicioF = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+  const dias = Math.round((inicioHoy - inicioF) / 86400000);
+  if (dias === 0) return "hoy";
+  if (dias === 1) return "ayer";
+  if (dias > 1 && dias < 7) return `hace ${dias} días`;
+  if (dias >= 7 && dias < 14) return "hace 1 semana";
+  if (dias >= 14 && dias < 30) return `hace ${Math.floor(dias / 7)} semanas`;
+  return fechaLegible(f);
+}
+
+// Días juntos desde FECHA_INICIO (config.js), para el contador de Inicio.
+export function diasDesde(fechaISO) {
+  if (!fechaISO) return null;
+  const [y, m, d] = fechaISO.split("-").map(Number);
+  const inicio = new Date(y, m - 1, d);
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  return Math.max(0, Math.round((inicioHoy - inicio) / 86400000));
+}
+
+// Vibración corta como confirmación física (Android; en iPhone Safari no
+// existe esta API y esto no hace nada — no es un fallo, es la plataforma).
+export function vibrar(patron = 30) {
+  try {
+    navigator.vibrate?.(patron);
+  } catch (_) {}
+}
+
+// ---- Skeleton (siluetas de carga) ------------------------------------
+
+export function skeleton(lineas = 3) {
+  const cont = el("div", { class: "skeleton" });
+  for (let i = 0; i < lineas; i++) {
+    cont.append(el("div", { class: "skeleton-bloque" }));
+  }
+  return cont;
+}
+
 // Estado de una fecha objetivo: devuelve {texto, clase} o null.
 export function cuentaAtras(fechaObjetivo) {
   if (!fechaObjetivo) return null;

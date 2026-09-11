@@ -13,10 +13,31 @@
   --dorado: #d9a441;
   --peligro: #c0503f;
   --linea: #e7dccd;
+  --chip-bg: #efe6d8;
   --sombra: 0 6px 22px rgba(120, 92, 60, 0.14);
   --radio: 18px;
   --radio-s: 12px;
   --tap: 44px;
+}
+
+/* Modo oscuro automático (sigue el ajuste del sistema, sin botón manual). */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --crema: #1a1714;
+    --crema-2: #221e19;
+    --papel: #2a2521;
+    --tinta: #f1ebe3;
+    --tinta-suave: #b2a89d;
+    --terracota: #e2905e;
+    --terracota-oscuro: #f0ab7c;
+    --salvia: #93b58d;
+    --salvia-oscuro: #acd0a6;
+    --dorado: #e8bd63;
+    --peligro: #e2897c;
+    --linea: #3b342d;
+    --chip-bg: #342d26;
+    --sombra: 0 6px 22px rgba(0, 0, 0, 0.45);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +88,7 @@ img { display: block; max-width: 100%; }
 }
 .btn-persona:active { transform: scale(.97); background: color-mix(in srgb, var(--c) 12%, white); }
 .nota-pie { font-size: 13px; color: var(--tinta-suave); }
-.portada code { background: #efe6d8; padding: 1px 5px; border-radius: 6px; font-size: .92em; }
+.portada code { background: var(--chip-bg); padding: 1px 5px; border-radius: 6px; font-size: .92em; }
 
 /* ---- Shell ---- */
 .topbar {
@@ -155,11 +176,11 @@ img { display: block; max-width: 100%; }
   display: inline-block;
   font-size: 12px; font-weight: 700;
   padding: 3px 9px; border-radius: 999px;
-  background: #efe6d8; color: var(--tinta-suave);
+  background: var(--chip-bg); color: var(--tinta-suave);
 }
 .badge.casi, .badge.hoy { background: color-mix(in srgb, var(--dorado) 24%, white); color: #8a5d12; }
 .badge.hoy { background: color-mix(in srgb, var(--terracota) 22%, white); color: var(--terracota-oscuro); }
-.badge.pasada { background: #f0e2df; color: var(--peligro); }
+.badge.pasada { background: color-mix(in srgb, var(--peligro) 20%, var(--papel)); color: var(--peligro); }
 .badge.hecho { background: color-mix(in srgb, var(--salvia) 24%, white); color: var(--salvia-oscuro); }
 
 /* ---- Vacío ---- */
@@ -192,7 +213,7 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 .icono-btn:active { transform: scale(.92); }
 
 /* ---- Segmentado ---- */
-.segmentado { display: flex; gap: 6px; background: #ece1d1; padding: 4px; border-radius: 999px; margin-bottom: 18px; }
+.segmentado { display: flex; gap: 6px; background: var(--chip-bg); padding: 4px; border-radius: 999px; margin-bottom: 18px; }
 .seg { flex: 1; border: 0; background: transparent; padding: 9px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--tinta-suave); }
 .seg.activo { background: var(--papel); color: var(--tinta); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 
@@ -302,13 +323,16 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 .toast {
   position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom));
   transform: translate(-50%, 20px);
-  background: var(--tinta); color: #fff;
+  /* Siempre oscuro con texto claro, en los dos temas — es un aviso puntual,
+     no parte del lienzo de la app, así que no usa --tinta (que se invierte
+     en modo oscuro). */
+  background: #2b241f; color: #fff;
   padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 14px;
   opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 50;
   max-width: 90vw; text-align: center;
 }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
-.toast[data-tipo="error"] { background: var(--peligro); }
+.toast[data-tipo="error"] { background: #8f3b30; }
 
 /* ---- Confeti ---- */
 .confeti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
@@ -361,6 +385,72 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 .mapa-pie { text-align: center; color: var(--tinta-suave); font-size: 13px; margin-top: 10px; }
 .popup-foto { border-radius: 10px; max-height: 180px; width: 100%; object-fit: cover; }
 .leaflet-container { font: inherit; }
+
+/* ---- Contador de aniversario ---- */
+.juntos { margin: 2px 0 0; font-weight: 700; color: var(--terracota-oscuro); }
+
+/* ---- "Un día como hoy" ---- */
+.bloque-memoria {
+  display: block; text-decoration: none; color: inherit;
+  border-color: color-mix(in srgb, var(--dorado) 45%, var(--linea));
+  background: color-mix(in srgb, var(--dorado) 10%, var(--papel));
+}
+.bloque-memoria .tarjeta-recuerdo-mini-txt span { -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---- Sorpréndeme ---- */
+.btn-sorpresa {
+  display: block; width: 100%; text-align: center;
+  border: 1px dashed var(--terracota); background: color-mix(in srgb, var(--terracota) 8%, var(--papel));
+  color: var(--terracota-oscuro); font-weight: 700; font-size: 15px;
+  border-radius: var(--radio); padding: 14px; cursor: pointer; margin-top: 4px;
+}
+.btn-sorpresa:active { transform: scale(.98); }
+.sorpresa { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.sorpresa-emoji { font-size: 40px; }
+.sorpresa h3 { font-size: 20px; }
+.sorpresa-foto { width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radio-s); }
+.sorpresa-tit { font-weight: 700; font-size: 17px; margin: 0; }
+.sorpresa-nota { color: var(--tinta-suave); margin: 0; white-space: pre-wrap; }
+.sorpresa .form-acciones { width: 100%; justify-content: center; }
+
+/* ---- Reacción ❤️ ---- */
+.corazon-mini {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0, 0, 0, .45); color: #fff;
+  border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700;
+  cursor: pointer; line-height: 1.4;
+}
+.corazon-mini.activo { background: color-mix(in srgb, var(--peligro) 75%, black 15%); }
+.cr { position: relative; }
+.btn-corazon-detalle {
+  align-self: flex-start; border: 1px solid var(--linea); background: var(--papel);
+  border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-corazon-detalle.activo { border-color: var(--peligro); color: var(--peligro); }
+
+/* ---- Buscador / filtro ---- */
+.barra-filtro { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.buscador {
+  border: 1px solid var(--linea); background: var(--papel); color: var(--tinta);
+  border-radius: 999px; padding: 10px 16px; width: 100%; font-size: 14px;
+}
+.buscador:focus { outline: 2px solid color-mix(in srgb, var(--terracota) 45%, transparent); }
+.chips-filtro { margin-bottom: 0; }
+
+/* ---- Skeleton (carga) ---- */
+.skeleton { display: flex; flex-direction: column; gap: 12px; }
+.skeleton-bloque {
+  height: 64px; border-radius: var(--radio); background: var(--papel);
+  border: 1px solid var(--linea);
+  background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--linea) 70%, transparent) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+@keyframes brillo { from { background-position: 140% 0; } to { background-position: -40% 0; } }
+
+/* ---- Transición entre pestañas ---- */
+.vista-inner { animation: vista-entra .22s ease both; }
+@keyframes vista-entra { from { opacity: 0; transform: translateY(8px); } }
 
 /* ---- Reduce motion ---- */
 @media (prefers-reduced-motion: reduce) {

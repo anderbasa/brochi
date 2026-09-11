@@ -1,10 +1,21 @@
 // Punto de entrada: identidad, navegación por pestañas y estado compartido
 // (planes y recuerdos) que se mantiene sincronizado en vivo con Firestore.
 
-import { PERSONAS } from "./config.js";
+import { PERSONAS, CATEGORIAS, FECHA_INICIO } from "./config.js";
 import { isConfigured, firebaseListo, supabaseListo, subscribePlanes, subscribeRecuerdos } from "./firebase.js";
 import { resolverDesdeURL, guardarPersona, otra } from "./identidad.js";
-import { el, limpiar, fechaTS, fechaLegible, cuentaAtras } from "./ui.js";
+import {
+  el,
+  limpiar,
+  abrirModal,
+  cerrarModal,
+  vibrar,
+  skeleton,
+  fechaTS,
+  fechaLegible,
+  cuentaAtras,
+  diasDesde,
+} from "./ui.js";
 import { renderLista } from "./vista-lista.js";
 import { renderRecuerdos } from "./vista-recuerdos.js";
 import { renderMapa } from "./vista-mapa.js";
@@ -148,21 +159,54 @@ function router() {
 function renderHome(cont) {
   const pintar = () => {
     limpiar(cont);
-    const pendientes = store.planes.filter((p) => p.estado === "pendiente");
-    const hechos = store.planes.filter((p) => p.estado === "hecho");
 
-    // Resumen / contadores
+    // Contador de aniversario — no depende de Firestore, sale siempre.
+    const dias = diasDesde(FECHA_INICIO);
     cont.append(
       el("section", { class: "saludo" },
         el("h2", { text: `Hola, ${store.persona.nombre.split(" ")[0]}` }),
-        el("p", { class: "sub", text: store.cargando ? "Cargando…" : frase(pendientes.length, hechos.length) })
-      ),
+        dias != null && el("p", { class: "juntos", text: `💛 ${dias.toLocaleString("es")} días juntos` }),
+        el("p", { class: "sub", text: store.cargando ? "Cargando…" : frase(pendientesN(), hechosN()) })
+      )
+    );
+
+    if (store.cargando) {
+      cont.append(skeleton(3));
+      return;
+    }
+
+    const pendientes = store.planes.filter((p) => p.estado === "pendiente");
+    const hechos = store.planes.filter((p) => p.estado === "hecho");
+
+    cont.append(
       el("div", { class: "contadores" },
         contador(pendientes.length, "por hacer"),
         contador(hechos.length, "hechos"),
         contador(store.recuerdos.length, "recuerdos")
       )
     );
+
+    // "Un día como hoy" — recuerdos de la misma fecha en años anteriores.
+    const memoria = unDiaComoHoy();
+    if (memoria) {
+      const años = new Date().getFullYear() - fechaTS(memoria.creadoEn).getFullYear();
+      cont.append(
+        el("a", { href: "#recuerdos", class: "bloque bloque-memoria" },
+          el("div", { class: "bloque-cab" },
+            el("h3", { text: `📅 Un día como hoy, hace ${años} ${años === 1 ? "año" : "años"}` })
+          ),
+          el("div", { class: "tarjeta-recuerdo-mini" },
+            memoria.fotos && memoria.fotos[0]
+              ? el("img", { src: memoria.fotos[0], alt: "", loading: "lazy" })
+              : el("div", { class: "sin-foto-mini", text: "📸" }),
+            el("div", { class: "tarjeta-recuerdo-mini-txt" },
+              el("strong", { text: memoria.titulo }),
+              memoria.nota && el("span", { text: memoria.nota })
+            )
+          )
+        )
+      );
+    }
 
     // Próximos planes con fecha
     const proximos = pendientes
@@ -209,19 +253,65 @@ function renderHome(cont) {
       );
     }
 
-    if (!store.cargando && !store.planes.length) {
+    if (!store.planes.length) {
       cont.append(
         el("section", { class: "vacio" },
           el("p", { text: "Aún no hay ningún plan." }),
           el("a", { href: "#lista", class: "btn-primario", text: "Añadir el primero" })
         )
       );
+    } else if (pendientes.length) {
+      cont.append(
+        el("button", { class: "btn-sorpresa", type: "button", onclick: sorprenderme }, "🎲 Sorpréndeme")
+      );
     }
   };
+
+  const pendientesN = () => store.planes.filter((p) => p.estado === "pendiente").length;
+  const hechosN = () => store.planes.filter((p) => p.estado === "hecho").length;
 
   pintar();
   const off = store.onChange(pintar);
   observarSalida(cont, off);
+}
+
+// Recuerdo(s) de la misma fecha (día+mes) en un año anterior — el más
+// reciente si hay varios. `null` si no hay ninguno.
+function unDiaComoHoy() {
+  const hoy = new Date();
+  const coincidencias = store.recuerdos
+    .map((r) => ({ r, f: fechaTS(r.creadoEn) }))
+    .filter(
+      ({ f }) => f && f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth() && f.getFullYear() !== hoy.getFullYear()
+    )
+    .sort((a, b) => b.f - a.f);
+  return coincidencias[0]?.r || null;
+}
+
+// Elige un plan pendiente al azar y lo muestra en una tarjeta — para cuando
+// no sabéis qué hacer.
+function sorprenderme() {
+  const pendientes = store.planes.filter((p) => p.estado === "pendiente");
+  if (!pendientes.length) return;
+  mostrarSorpresa(pendientes);
+}
+
+function mostrarSorpresa(pendientes) {
+  vibrar(20);
+  const p = pendientes[Math.floor(Math.random() * pendientes.length)];
+  const cat = CATEGORIAS.find((c) => c.id === p.categoria);
+  const cont = el("div", { class: "sorpresa" },
+    el("div", { class: "sorpresa-emoji", text: "🎲" }),
+    el("h3", { text: "¿Qué tal...?" }),
+    p.fotoRef && el("img", { class: "sorpresa-foto", src: p.fotoRef, alt: "" }),
+    el("p", { class: "sorpresa-tit" }, cat ? `${cat.emoji} ` : "", p.titulo),
+    p.nota && el("p", { class: "sorpresa-nota", text: p.nota }),
+    el("div", { class: "form-acciones" },
+      el("button", { type: "button", class: "btn-plano", onclick: () => mostrarSorpresa(pendientes) }, "Otro"),
+      el("a", { class: "btn-primario", href: "#lista", onclick: cerrarModal }, "Ver en la lista")
+    )
+  );
+  abrirModal(cont);
 }
 
 function frase(pend, hechos) {

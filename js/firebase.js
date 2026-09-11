@@ -26,6 +26,7 @@
 //     ubicacion  { texto: string, lat: number|null, lng: number|null } | null
 //     creadoPor  "ander" | "pareja"
 //     creadoEn   Timestamp (servidor)
+//     reacciones { [personaId]: true }   quién le ha dado ❤️ (opcional)
 //
 // Fotos (bucket "fotos" de Supabase):
 //   planes/{planId}/ref_{ts}.jpg
@@ -187,6 +188,13 @@ export async function borrarFotoDeRecuerdo(id, url, fotosActuales) {
   await borrarImagen(url);
   await updateDoc(doc(db, "recuerdos", id), {
     fotos: (fotosActuales || []).filter((u) => u !== url),
+  });
+}
+
+// Alterna el ❤️ de `personaId` en un recuerdo (like/quitar like).
+export async function alternarReaccion(id, personaId, yaLeGusta) {
+  await updateDoc(doc(db, "recuerdos", id), {
+    [`reacciones.${personaId}`]: yaLeGusta ? false : true,
   });
 }
 
