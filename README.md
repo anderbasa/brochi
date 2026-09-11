@@ -202,6 +202,7 @@ brochi/
 │   ├── vista-recuerdos.js  → recuerdos
 │   └── vista-mapa.js       → mapa (Leaflet + OpenStreetMap)
 └── icons/
+    └── splash/             → pantallas de carga para iOS (ver más abajo)
 ```
 
 ## Si quieres regenerar los iconos
@@ -209,6 +210,17 @@ brochi/
 Los `icon-*.png` ya están incluidos. Para rehacerlos con otro color, edita
 `icons/favicon.svg` y vuelve a exportar a 192 y 512 px (cualquier conversor
 SVG→PNG online vale).
+
+## Pantalla de carga en iPhone (splash screen)
+
+Al abrir la app instalada desde el icono de la pantalla de inicio, iOS
+Safari muestra una pantalla de carga propia (`icons/splash/*.png`, un
+juego en claro y otro en oscuro para los tamaños de iPhone más comunes de
+los últimos años) en vez del parpadeo en blanco de por defecto. Si algún
+día cambias el diseño de la marca (el circulito con el brote), puedes
+volver a generar estas 20 imágenes ejecutando de nuevo el script que las
+creó — pide los tamaños en `index.html` (sección `apple-touch-startup-image`)
+si necesitas añadir un modelo de iPhone nuevo que no esté cubierto.
 
 ---
 
