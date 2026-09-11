@@ -8,9 +8,18 @@ export const firebaseConfig = {
   apiKey: "PEGA_AQUI_apiKey",
   authDomain: "PEGA_AQUI_authDomain",
   projectId: "PEGA_AQUI_projectId",
-  storageBucket: "PEGA_AQUI_storageBucket",
   messagingSenderId: "PEGA_AQUI_messagingSenderId",
   appId: "PEGA_AQUI_appId",
+};
+
+// Claves del proyecto de Supabase — solo se usan para las FOTOS (Supabase
+// Storage), porque su capa gratuita no exige tarjeta (a diferencia de
+// Firebase Storage). Los planes y recuerdos siguen en Firestore, arriba.
+// Ver README.md, sección 1.3. La "anon key" es pública a propósito (como
+// las claves de Firebase): la protección real son las políticas del bucket.
+export const supabaseConfig = {
+  url: "PEGA_AQUI_supabaseUrl",
+  anonKey: "PEGA_AQUI_supabaseAnonKey",
 };
 
 // Las dos personas de la app. Cada pegatina NFC graba la URL con su "id" en el

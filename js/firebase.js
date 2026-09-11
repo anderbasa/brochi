@@ -1,5 +1,7 @@
-// Capa de datos compartidos. Es el ÚNICO archivo que habla con Firebase —
-// si algún día cambiáis de backend, es aquí donde hay que tocar.
+// Capa de datos compartidos. Firestore guarda planes y recuerdos; las FOTOS
+// viven en Supabase Storage (js/fotos.js) porque su capa gratuita no exige
+// tarjeta — este archivo solo guarda las URLs que ese módulo le devuelve.
+// Si algún día cambiáis de backend de datos, es aquí donde hay que tocar.
 //
 // Modelo de datos (colecciones de Firestore):
 //
@@ -8,7 +10,7 @@
 //     nota          string   ("" si vacío)
 //     categoria     string|null   ver CATEGORIAS en config.js
 //     fechaObjetivo string|null   "YYYY-MM-DD"
-//     fotoRef       string|null   URL de descarga en Storage
+//     fotoRef       string|null   URL pública en Supabase Storage
 //     estado        "pendiente" | "hecho"
 //     creadoPor     "ander" | "pareja"
 //     completadoPor "ander" | "pareja" | null
@@ -20,12 +22,12 @@
 //     planId     string|null   plan de origen
 //     titulo     string
 //     nota       string
-//     fotos      string[]      URLs de descarga en Storage
+//     fotos      string[]      URLs públicas en Supabase Storage
 //     ubicacion  { texto: string, lat: number|null, lng: number|null } | null
 //     creadoPor  "ander" | "pareja"
 //     creadoEn   Timestamp (servidor)
 //
-// Fotos en Storage:
+// Fotos (bucket "fotos" de Supabase):
 //   planes/{planId}/ref_{ts}.jpg
 //   recuerdos/{recuerdoId}/{ts}_{i}.jpg
 
@@ -40,22 +42,15 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-  listAll,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, supabaseConfig } from "./config.js";
+import { subirImagen, borrarImagen, borrarCarpeta } from "./fotos.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 export function isConfigured() {
-  return !Object.values(firebaseConfig).some((v) => String(v).startsWith("PEGA_AQUI"));
+  const valores = [...Object.values(firebaseConfig), ...Object.values(supabaseConfig)];
+  return !valores.some((v) => String(v).startsWith("PEGA_AQUI"));
 }
 
 // ---- Lectura en vivo -------------------------------------------------------
@@ -195,28 +190,4 @@ export async function borrarRecuerdo(recuerdo) {
     } catch (_) {}
   }
   await deleteDoc(doc(db, "recuerdos", recuerdo.id));
-}
-
-// ---- Storage (helpers internos) ---------------------------------------
-
-async function subirImagen(blob, path) {
-  const r = storageRef(storage, path);
-  await uploadBytes(r, blob, { contentType: "image/jpeg" });
-  return getDownloadURL(r);
-}
-
-async function borrarImagen(url) {
-  try {
-    await deleteObject(storageRef(storage, url));
-  } catch (_) {
-    // si la foto ya no existe, no pasa nada
-  }
-}
-
-// Storage no tiene "borrar carpeta": listamos y borramos objeto por objeto.
-async function borrarCarpeta(prefijo) {
-  try {
-    const res = await listAll(storageRef(storage, prefijo));
-    await Promise.all(res.items.map((item) => deleteObject(item).catch(() => {})));
-  } catch (_) {}
 }
