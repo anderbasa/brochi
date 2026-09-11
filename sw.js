@@ -1,6 +1,6 @@
 // Cachea el "cascarón" (HTML/CSS/JS/iconos) para abrir rápido y offline.
 // Los datos (Firestore) y las fotos (Storage) nunca pasan por aquí: siempre red.
-const CACHE = "brochi-v3";
+const CACHE = "brochi-v4";
 const ASSETS = [
   "./",
   "./index.html",

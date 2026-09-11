@@ -193,11 +193,12 @@ export function campoFotos({ multiple = true, etiqueta = "Añadir fotos" } = {})
 
 // ---- Selector de ubicación (mapa con pin) ----------------------------
 
-// Mapa pequeño con un pin que se puede tocar/arrastrar para marcar
-// exactamente dónde fue el recuerdo — no depende de dónde esté el móvil en
-// ese momento (a diferencia de "usar mi ubicación actual", que sigue
-// disponible como atajo). Devuelve { nodo, valor() → {lat,lng}|null }.
-export function campoUbicacion({ lat = null, lng = null } = {}) {
+// Mapa pequeño con un pin que se puede tocar/arrastrar, MÁS un buscador de
+// sitios por nombre (Nominatim/OpenStreetMap, gratis y sin API key) para
+// marcar cualquier lugar sin depender de acertar el punto exacto con el
+// dedo. "Usar mi ubicación actual" sigue disponible como atajo cuando de
+// verdad se está en el sitio. Devuelve { nodo, valor() → {lat,lng}|null }.
+export function campoUbicacion({ lat = null, lng = null, onLugar } = {}) {
   let valor = lat != null && lng != null ? { lat, lng } : null;
   const CENTRO_DEFECTO = [40.4168, -3.7038]; // España, solo para encuadrar si no hay pin
 
@@ -205,7 +206,7 @@ export function campoUbicacion({ lat = null, lng = null } = {}) {
     class: "mapa-mini-ayuda",
     text: valor
       ? "Arrastra el pin o toca el mapa para moverlo."
-      : "Toca el mapa para marcar dónde fue, o usa tu ubicación actual.",
+      : "Toca el mapa para marcar dónde fue, o busca el sitio abajo.",
   });
   const caja = el("div", { class: "mapa-mini" });
   const btnQuitar = el(
@@ -218,6 +219,63 @@ export function campoUbicacion({ lat = null, lng = null } = {}) {
     { type: "button", class: "btn-foto", onclick: () => irAMiUbicacion() },
     "📍 Usar mi ubicación actual"
   );
+
+  // Buscador de sitios por nombre — la alternativa pedida a "toca el mapa"
+  // para cuando se quiere marcar un lugar cualquiera con precisión.
+  const buscarInput = el("input", {
+    type: "text",
+    placeholder: "O busca un sitio (ej. Torre Eiffel, París)",
+  });
+  const buscarBtn = el("button", { type: "button", class: "btn-plano", onclick: () => buscar() }, "Buscar");
+  const resultados = el("div", { class: "resultados-busqueda" });
+  buscarInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // no debe enviar el formulario que la contiene
+      buscar();
+    }
+  });
+
+  async function buscar() {
+    const q = buscarInput.value.trim();
+    if (!q) return;
+    limpiar(resultados);
+    buscarBtn.disabled = true;
+    buscarBtn.textContent = "Buscando…";
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(q)}`;
+      const resp = await fetch(url, { headers: { "Accept-Language": "es" } });
+      if (!resp.ok) throw new Error("respuesta " + resp.status);
+      const datos = await resp.json();
+      if (!datos.length) {
+        resultados.append(el("p", { class: "resultados-vacio", text: "Sin resultados para ese nombre." }));
+        return;
+      }
+      datos.forEach((d) => {
+        resultados.append(
+          el(
+            "button",
+            { type: "button", class: "resultado-busqueda", onclick: () => elegirResultado(d) },
+            d.display_name
+          )
+        );
+      });
+    } catch (_) {
+      resultados.append(el("p", { class: "resultados-vacio", text: "No se pudo buscar (revisa tu conexión)." }));
+    } finally {
+      buscarBtn.disabled = false;
+      buscarBtn.textContent = "Buscar";
+    }
+  }
+
+  function elegirResultado(d) {
+    const la = parseFloat(d.lat);
+    const ln = parseFloat(d.lon);
+    if (mapa) mapa.setView([la, ln], 15);
+    ponerPin(la, ln);
+    limpiar(resultados);
+    buscarInput.value = "";
+    if (onLugar) onLugar(d.display_name.split(",").slice(0, 3).join(",").trim());
+  }
 
   let mapa, marker;
 
@@ -283,7 +341,15 @@ export function campoUbicacion({ lat = null, lng = null } = {}) {
   }
 
   return {
-    nodo: el("div", { class: "campo-ubicacion" }, ayuda, caja, el("div", { class: "geo-fila" }, btnGeo, btnQuitar)),
+    nodo: el(
+      "div",
+      { class: "campo-ubicacion" },
+      ayuda,
+      caja,
+      el("div", { class: "geo-fila" }, btnGeo, btnQuitar),
+      el("div", { class: "busqueda-ubicacion" }, buscarInput, buscarBtn),
+      resultados
+    ),
     valor: () => valor,
   };
 }

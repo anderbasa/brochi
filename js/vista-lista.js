@@ -204,7 +204,7 @@ function formRecuerdo(plan) {
   const nota = el("textarea", { rows: 4, maxlength: 1000, placeholder: "¿Cómo fue? ¿Qué recordáis de ese día?" });
   const lugar = el("input", { type: "text", maxlength: 160, placeholder: "Ej. Playa de la Concha, San Sebastián" });
   const fotos = campoFotos({ multiple: true, etiqueta: "Fotos del recuerdo" });
-  const ubic = campoUbicacion();
+  const ubic = campoUbicacion({ onLugar: (texto) => { if (!lugar.value.trim()) lugar.value = texto; } });
 
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar recuerdo");
 

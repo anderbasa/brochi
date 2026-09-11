@@ -128,7 +128,11 @@ function formEditar(r) {
   const nota = el("textarea", { rows: 4, maxlength: 1000, placeholder: "Nota del recuerdo" }, r.nota || "");
   const lugar = el("input", { type: "text", maxlength: 160, value: r.ubicacion?.texto || "", placeholder: "Lugar (texto libre)" });
   const fotos = campoFotos({ multiple: true, etiqueta: "Añadir más fotos" });
-  const ubic = campoUbicacion({ lat: r.ubicacion?.lat ?? null, lng: r.ubicacion?.lng ?? null });
+  const ubic = campoUbicacion({
+    lat: r.ubicacion?.lat ?? null,
+    lng: r.ubicacion?.lng ?? null,
+    onLugar: (texto) => { if (!lugar.value.trim()) lugar.value = texto; },
+  });
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar");
 
   const form = el("form", { class: "form" },

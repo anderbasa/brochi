@@ -299,6 +299,19 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
   width: 100%; height: 180px; border-radius: var(--radio-s);
   overflow: hidden; border: 1px solid var(--linea); background: var(--crema);
 }
+.busqueda-ubicacion { display: flex; gap: 8px; }
+.busqueda-ubicacion input {
+  flex: 1; min-width: 0; border: 1px solid var(--linea); background: var(--papel);
+  border-radius: var(--radio-s); padding: 10px 12px;
+}
+.busqueda-ubicacion button { flex: none; }
+.resultados-busqueda { display: flex; flex-direction: column; gap: 4px; }
+.resultado-busqueda {
+  text-align: left; border: 1px solid var(--linea); background: var(--papel);
+  border-radius: var(--radio-s); padding: 8px 10px; font-size: 13px; cursor: pointer;
+}
+.resultado-busqueda:active { background: var(--crema); }
+.resultados-vacio { margin: 0; font-size: 13px; color: var(--tinta-suave); }
 
 /* ---- Confirmar ---- */
 .confirmar { display: flex; flex-direction: column; gap: 16px; }
