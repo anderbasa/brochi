@@ -21,7 +21,6 @@ import {
   confirmar,
   cuentaAtras,
   campoFotos,
-  campoUbicacion,
 } from "./ui.js";
 
 let filtro = "pendiente"; // "pendiente" | "hecho"
@@ -204,7 +203,10 @@ function formRecuerdo(plan) {
   const nota = el("textarea", { rows: 4, maxlength: 1000, placeholder: "¿Cómo fue? ¿Qué recordáis de ese día?" });
   const lugar = el("input", { type: "text", maxlength: 160, placeholder: "Ej. Playa de la Concha, San Sebastián" });
   const fotos = campoFotos({ multiple: true, etiqueta: "Fotos del recuerdo" });
-  const ubic = campoUbicacion({ onLugar: (texto) => { if (!lugar.value.trim()) lugar.value = texto; } });
+
+  let coords = null;
+  const btnGeo = el("button", { type: "button", class: "btn-foto", onclick: () => pedirUbicacion(btnGeo, (c) => (coords = c)) }, "📍 Usar mi ubicación");
+  const geoEstado = el("span", { class: "geo-estado" });
 
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar recuerdo");
 
@@ -213,7 +215,7 @@ function formRecuerdo(plan) {
     el("p", { class: "form-sub", text: `"${plan.titulo}" pasa a Recuerdos. Añade una nota y fotos.` }),
     campo("Nota", nota),
     campo("Lugar (texto libre)", lugar),
-    campo("Ubicación en el mapa (opcional)", ubic.nodo),
+    campo("Ubicación en el mapa (opcional)", el("div", { class: "geo-fila" }, btnGeo, geoEstado)),
     campo("Fotos", fotos.nodo),
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: cerrarModal }, "Ahora no"),
@@ -227,10 +229,9 @@ function formRecuerdo(plan) {
     guardar.textContent = "Guardando…";
     try {
       const fotosBlobs = await comprimirVarias(fotos.archivos());
-      const punto = ubic.valor();
       const ubicacion =
-        lugar.value.trim() || punto
-          ? { texto: lugar.value.trim(), lat: punto?.lat ?? null, lng: punto?.lng ?? null }
+        lugar.value.trim() || coords
+          ? { texto: lugar.value.trim(), lat: coords?.lat ?? null, lng: coords?.lng ?? null }
           : null;
       await completarPlan(plan, { nota: nota.value, ubicacion, fotosBlobs }, store.persona.id);
       cerrarModal();
@@ -245,6 +246,28 @@ function formRecuerdo(plan) {
   });
 
   abrirModal(form);
+}
+
+function pedirUbicacion(boton, onOk) {
+  const estado = boton.parentElement.querySelector(".geo-estado");
+  if (!navigator.geolocation) {
+    estado.textContent = "Este móvil no da ubicación";
+    return;
+  }
+  boton.disabled = true;
+  estado.textContent = "Pidiendo permiso…";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      onOk({ lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6) });
+      estado.textContent = "Ubicación añadida ✓";
+      boton.disabled = false;
+    },
+    (err) => {
+      estado.textContent = err.code === 1 ? "Permiso denegado" : "No se pudo obtener";
+      boton.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }
 
 // ---- Helpers de formulario ----------------------------------------
