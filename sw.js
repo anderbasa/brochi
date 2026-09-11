@@ -39,8 +39,12 @@ self.addEventListener("fetch", (e) => {
   if (new URL(request.url).origin !== location.origin) return; // deja pasar Firebase, Leaflet, fuentes
 
   // Red primero (para recibir cambios), caché como respaldo sin conexión.
+  // `cache: "no-store"` es importante: sin esto, un `fetch()` normal puede
+  // devolver una respuesta ya guardada en la caché HTTP del propio
+  // navegador (no la nuestra) aunque haya red, y entonces "red primero" no
+  // seria realmente la versión más reciente publicada.
   e.respondWith(
-    fetch(request)
+    fetch(request.url, { cache: "no-store" })
       .then((resp) => {
         const copia = resp.clone();
         caches.open(CACHE).then((c) => c.put(request, copia));
