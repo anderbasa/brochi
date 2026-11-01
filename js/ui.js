@@ -21,13 +21,29 @@ export function limpiar(node) {
   return node;
 }
 
-// ---- Modal --------------------------------------------------------------
+// ---- Hojas (modales) al estilo iOS ---------------------------------------
+//
+// En el movil son hojas que suben desde abajo, con su barrita, y se cierran
+// arrastrandolas hacia abajo como las de iOS. Si ya hay una hoja abierta, la
+// nueva NO la cierra y vuelve a abrir: cambia el contenido en el sitio (asi
+// pasar del detalle de un recuerdo a "Editar", o "Otro" en Sorprendeme, no
+// hace bajar y subir la hoja cada vez).
 
 let modalAbierto = null;
 
 export function abrirModal(contenido, { onCerrar } = {}) {
-  cerrarModal();
-  const panel = el("div", { class: "modal-panel", role: "dialog", "aria-modal": "true" }, contenido);
+  if (modalAbierto) {
+    const anterior = modalAbierto.onCerrar;
+    modalAbierto.onCerrar = onCerrar;
+    if (anterior) anterior();
+    const { panel } = modalAbierto;
+    limpiar(panel);
+    panel.append(el("div", { class: "modal-asa" }), contenido);
+    panel.scrollTop = 0;
+    return { cerrar: cerrarModal };
+  }
+  const panel = el("div", { class: "modal-panel", role: "dialog", "aria-modal": "true" },
+    el("div", { class: "modal-asa" }), contenido);
   const fondo = el("div", { class: "modal-fondo" }, panel);
   fondo.addEventListener("click", (e) => {
     if (e.target === fondo) cerrarModal();
@@ -36,8 +52,10 @@ export function abrirModal(contenido, { onCerrar } = {}) {
   document.addEventListener("keydown", escHandler);
   document.body.appendChild(fondo);
   document.body.style.overflow = "hidden";
-  requestAnimationFrame(() => fondo.classList.add("visible"));
-  modalAbierto = { fondo, escHandler, onCerrar };
+  fondo.getBoundingClientRect(); // fija el estado inicial para que la entrada se anime
+  fondo.classList.add("visible");
+  activarArrastre(panel, fondo);
+  modalAbierto = { fondo, panel, escHandler, onCerrar };
   return { cerrar: cerrarModal };
 }
 
@@ -47,9 +65,82 @@ export function cerrarModal() {
   document.removeEventListener("keydown", escHandler);
   fondo.classList.remove("visible");
   document.body.style.overflow = "";
-  setTimeout(() => fondo.remove(), 200);
+  setTimeout(() => fondo.remove(), 460);
   modalAbierto = null;
   if (onCerrar) onCerrar();
+}
+
+// Deslizar hacia abajo para cerrar. Solo empieza si la hoja esta arriba del
+// todo (si no, el gesto es el scroll normal del contenido) o si se agarra
+// por la barrita.
+function activarArrastre(panel, fondo) {
+  let y0 = null, dy = 0, t0 = 0, arrastrando = false;
+  panel.addEventListener("touchstart", (e) => {
+    if (window.innerWidth >= 560 || e.touches.length > 1) return;
+    const enAsa = e.target.closest(".modal-asa");
+    if (panel.scrollTop > 0 && !enAsa) return;
+    y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); arrastrando = false;
+  }, { passive: true });
+  panel.addEventListener("touchmove", (e) => {
+    if (y0 === null) return;
+    dy = e.touches[0].clientY - y0;
+    if (!arrastrando) {
+      if (dy > 8) { arrastrando = true; panel.classList.add("arrastrando"); }
+      else if (dy < -4) { y0 = null; return; } // hacia arriba: scroll normal
+      else return;
+    }
+    e.preventDefault();
+    // un poco de resistencia, como en iOS
+    const d = dy > 0 ? dy : dy / 4;
+    panel.style.transform = `translateY(${d}px)`;
+    fondo.style.opacity = String(Math.max(0.3, 1 - Math.max(0, dy) / 500));
+  }, { passive: false });
+  const fin = () => {
+    if (y0 === null) return;
+    const velocidad = dy / Math.max(1, Date.now() - t0);
+    y0 = null;
+    if (!arrastrando) return;
+    arrastrando = false;
+    panel.classList.remove("arrastrando");
+    const cerrar = dy > 130 || (dy > 40 && velocidad > 0.5);
+    // en el mismo instante: quitar el desplazamiento a mano y (si toca)
+    // cerrar, para que la transicion salga desde donde quedo el dedo
+    panel.style.transform = "";
+    fondo.style.opacity = "";
+    if (cerrar) cerrarModal();
+  };
+  panel.addEventListener("touchend", fin);
+  panel.addEventListener("touchcancel", fin);
+}
+
+// ---- Explosion de corazones -------------------------------------------
+
+// Lanza unos corazones desde el centro de `origen` (un elemento del DOM).
+export function explosionCorazones(origen, cuantos = 10) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = origen.getBoundingClientRect();
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const tipos = ["❤️", "❤️", "🧡", "💕"];
+  for (let i = 0; i < cuantos; i++) {
+    const ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.3;
+    const dist = 50 + Math.random() * 70;
+    const c = el("span", {
+      class: "chispa",
+      "aria-hidden": "true",
+      style: [
+        `--x:${x}px`, `--y:${y}px`,
+        `--dx:${Math.cos(ang) * dist}px`, `--dy:${Math.sin(ang) * dist}px`,
+        `--giro:${Math.round((Math.random() - 0.5) * 70)}deg`,
+        `--t:${14 + Math.round(Math.random() * 12)}px`,
+        `--retraso:${(Math.random() * 0.08).toFixed(2)}s`,
+      ].join(";"),
+    }, tipos[i % tipos.length]);
+    document.body.append(c);
+    setTimeout(() => c.remove(), 1100);
+  }
+  origen.classList.remove("latiendo");
+  void origen.offsetWidth;
+  origen.classList.add("latiendo");
 }
 
 // ---- Aviso corto (toast) ---------------------------------------------
@@ -160,11 +251,29 @@ export function diasHasta(fechaISO) {
   return Math.round((obj - inicioHoy) / 86400000);
 }
 
-// Vibración corta como confirmación física (Android; en iPhone Safari no
-// existe esta API y esto no hace nada — no es un fallo, es la plataforma).
+// Toque háptico corto como confirmación física.
+// - Android: navigator.vibrate().
+// - iPhone: Safari no tiene vibrate(), pero desde iOS 18 un interruptor
+//   nativo (<input type="checkbox" switch>) da un "tic" háptico al cambiar
+//   de estado, igual que los de Ajustes. Se crea uno invisible y se pulsa.
+//   Solo funciona si se llama DURANTE el toque del usuario (en el onclick,
+//   antes de cualquier await), por eso las vistas lo llaman al principio.
+const ES_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 export function vibrar(patron = 30) {
   try {
-    navigator.vibrate?.(patron);
+    if (navigator.vibrate) { navigator.vibrate(patron); return; }
+    if (!ES_IOS) return;
+    const etiqueta = document.createElement("label");
+    etiqueta.setAttribute("aria-hidden", "true");
+    etiqueta.style.display = "none";
+    const interruptor = document.createElement("input");
+    interruptor.type = "checkbox";
+    interruptor.setAttribute("switch", "");
+    etiqueta.append(interruptor);
+    document.head.append(etiqueta);
+    etiqueta.click();
+    etiqueta.remove();
   } catch (_) {}
 }
 

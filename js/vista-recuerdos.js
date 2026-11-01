@@ -10,6 +10,7 @@ import {
 } from "./firebase.js";
 import { store, observarSalida } from "./app.js";
 import { comprimirVarias } from "./imagenes.js";
+import { compartirRecuerdo } from "./compartir.js";
 import {
   el,
   limpiar,
@@ -24,6 +25,7 @@ import {
   campoFotos,
   vibrar,
   skeleton,
+  explosionCorazones,
 } from "./ui.js";
 
 let busqueda = "";
@@ -131,7 +133,11 @@ function corazonMini(r) {
     "span",
     {
       class: "corazon-mini" + (leGusta ? " activo" : ""),
-      onclick: (e) => { e.stopPropagation(); alCorazon(r); },
+      onclick: (e) => {
+        e.stopPropagation();
+        if (!leGusta) explosionCorazones(e.currentTarget);
+        alCorazon(r);
+      },
     },
     leGusta ? "❤️" : "🤍",
     total > 0 ? ` ${total}` : ""
@@ -155,10 +161,10 @@ function corazonDetalle(r) {
     {
       type: "button",
       class: "btn-corazon-detalle" + (leGusta ? " activo" : ""),
-      onclick: async () => {
+      onclick: async (e) => {
+        if (!leGusta) explosionCorazones(e.currentTarget, 14);
         await alCorazon(r);
-        cerrarModal();
-        detalle(r.id);
+        detalle(r.id); // refresca la hoja en el sitio, sin cerrarla
       },
     },
     etiqueta
@@ -204,6 +210,7 @@ function detalle(id) {
       text: "Ver en el mapa",
     }),
     el("div", { class: "detalle-acciones" },
+      navigator.share && el("button", { class: "btn-primario", onclick: () => { vibrar(); compartirRecuerdo(r); } }, "📤 Compartir"),
       el("button", { class: "btn-foto", onclick: () => formEditar(r) }, "✏️ Editar / añadir fotos"),
       el("button", { class: "btn-peligro", onclick: async () => {
         if (await confirmar(`¿Borrar el recuerdo "${r.titulo}"? Se borran también sus fotos.`)) {
@@ -241,13 +248,14 @@ function formEditar(r) {
     campoL("Lugar", lugar),
     campoL("Fotos nuevas", fotos.nodo),
     el("div", { class: "form-acciones" },
-      el("button", { type: "button", class: "btn-plano", onclick: () => { cerrarModal(); detalle(r.id); } }, "Cancelar"),
+      el("button", { type: "button", class: "btn-plano", onclick: () => detalle(r.id) }, "Cancelar"),
       guardar
     )
   );
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    vibrar(); // durante el toque: en iPhone el háptico no vale después de un await
     guardar.disabled = true;
     guardar.textContent = "Guardando…";
     try {
@@ -257,9 +265,8 @@ function formEditar(r) {
         ? { texto: lugar.value.trim(), lat: ubic.lat ?? null, lng: ubic.lng ?? null }
         : null;
       await editarRecuerdo(r.id, { titulo: titulo.value, nota: nota.value, ubicacion, fotosBlobs }, r.fotos);
-      cerrarModal();
+      detalle(r.id); // vuelve al detalle ya actualizado, como en iOS
       aviso("Recuerdo actualizado");
-      vibrar(25);
     } catch (err) {
       console.error(err);
       aviso(mensajeError(err), "error");

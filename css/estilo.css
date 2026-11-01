@@ -18,6 +18,14 @@
   --radio: 18px;
   --radio-s: 12px;
   --tap: 44px;
+  /* fondo de marca: el mismo degradado que el icono A♥N y las pantallas
+     de carga (icons/splash), para que arranque, portada e icono casen */
+  --marca-fondo:
+    radial-gradient(circle 520px at 25% 15%, rgba(255, 200, 150, 0.45), rgba(255, 200, 150, 0)),
+    linear-gradient(to bottom right, #d27748 0%, #a8492a 60%, #6f2a1b 100%);
+  --barra-fondo: linear-gradient(135deg, rgba(204, 108, 64, 0.95), rgba(160, 68, 38, 0.95));
+  --barra-texto: #fff6ec;
+  --hoja-curva: cubic-bezier(0.32, 0.72, 0, 1); /* la curva de las hojas de iOS */
 }
 
 /* Modo oscuro automático (sigue el ajuste del sistema, sin botón manual). */
@@ -37,6 +45,11 @@
     --linea: #3b342d;
     --chip-bg: #342d26;
     --sombra: 0 6px 22px rgba(0, 0, 0, 0.45);
+    --marca-fondo:
+      radial-gradient(circle 520px at 25% 15%, rgba(255, 190, 140, 0.22), rgba(255, 190, 140, 0)),
+      linear-gradient(to bottom right, #93422a 0%, #5e2617 60%, #2a120b 100%);
+    --barra-fondo: color-mix(in srgb, #221e19 86%, transparent);
+    --barra-texto: #f1ebe3;
   }
 }
 
@@ -50,13 +63,44 @@ body {
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; line-height: 1.2; margin: 0; }
 button, input, textarea, select { font: inherit; color: inherit; }
 a { color: var(--terracota-oscuro); }
 img { display: block; max-width: 100%; }
+/* que los botones y barras no saquen la lupa/menu de iOS al mantener pulsado */
+button, .tab, .topbar, .tabbar, .chip-cat, .seg, .cr { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
 #app { min-height: 100%; display: flex; flex-direction: column; }
+
+/* ---- Arranque (continuacion de la pantalla de carga de iOS) ---- */
+#arranque {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--marca-fondo);
+}
+#arranque img {
+  position: absolute; width: 280px; height: 280px;
+  left: calc(50% - 140px); top: calc(50% - 170px);
+  animation: latido 0.9s 0.15s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+#arranque p {
+  position: absolute; left: 0; right: 0; margin: 0;
+  top: calc(50% + 160px - 0.86em);
+  font: italic 600 30px/1 "Fraunces", Georgia, serif;
+  text-align: center; color: rgba(255, 240, 222, 0.92);
+}
+#arranque.saliendo { animation: arranque-fuera 0.45s ease forwards; pointer-events: none; }
+#arranque.saliendo img { animation: arranque-zoom 0.45s ease forwards; }
+@keyframes latido {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.07); }
+  55% { transform: scale(0.985); }
+  75% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+@keyframes arranque-fuera { to { opacity: 0; visibility: hidden; } }
+@keyframes arranque-zoom { to { transform: scale(1.18); } }
 
 /* ---- Portada / ¿Quién eres? ---- */
 .portada {
@@ -90,22 +134,59 @@ img { display: block; max-width: 100%; }
 .nota-pie { font-size: 13px; color: var(--tinta-suave); }
 .portada code { background: var(--chip-bg); padding: 1px 5px; border-radius: 6px; font-size: .92em; }
 
+/* la portada de "¿Quién eres?" sobre el fondo de marca, enlazando con el arranque */
+.portada-marca {
+  position: fixed; inset: 0; overflow-y: auto;
+  display: flex;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  background: var(--marca-fondo);
+  color: #fff4e8;
+}
+.portada-marca .portada { animation: entra 0.5s 0.1s ease both; }
+.logo-portada {
+  width: 116px; height: 116px; border-radius: 27px;
+  box-shadow: 0 14px 34px rgba(60, 15, 5, 0.38);
+  margin-bottom: 6px;
+}
+.portada-marca h1 { font-style: italic; font-size: 32px; color: #fff6ec; }
+.portada-marca .sub, .portada-marca .nota-pie { color: rgba(255, 240, 222, 0.8); }
+.portada-marca .pregunta { color: #fff6ec; }
+.portada-marca .btn-persona {
+  border: 0;
+  background: rgba(255, 248, 238, 0.96);
+  color: #3a322c;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 8px 22px rgba(60, 15, 5, 0.25);
+}
+.portada-marca .btn-persona::before {
+  content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+}
+.portada-marca .btn-persona:active { background: #fff; }
+
 /* ---- Shell ---- */
 .topbar {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px calc(12px + env(safe-area-inset-top));
-  background: color-mix(in srgb, var(--crema) 88%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--linea);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  /* arriba deja sitio a la hora / Dynamic Island (barra de estado translucida) */
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--barra-fondo);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  backdrop-filter: saturate(160%) blur(14px);
+  color: var(--barra-texto);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
-.marca { font-family: "Fraunces", serif; font-weight: 600; font-size: 18px; }
+.marca {
+  display: flex; align-items: center; gap: 9px;
+  font-family: "Fraunces", serif; font-style: italic; font-weight: 600; font-size: 19px;
+}
+.marca img { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25); }
 .chip-persona {
-  border: 1px solid var(--linea);
-  background: var(--papel);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--barra-texto);
   padding: 6px 14px;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
 }
@@ -123,8 +204,9 @@ img { display: block; max-width: 100%; }
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
   display: flex;
-  background: color-mix(in srgb, var(--crema-2) 92%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--crema-2) 82%, transparent);
+  -webkit-backdrop-filter: saturate(170%) blur(18px);
+  backdrop-filter: saturate(170%) blur(18px);
   border-top: 1px solid var(--linea);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -253,26 +335,42 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 }
 .fab:active { transform: scale(.9) rotate(90deg); }
 
-/* ---- Modal ---- */
+/* ---- Hojas (modales) al estilo iOS ---- */
 .modal-fondo {
   position: fixed; inset: 0; z-index: 40;
-  background: rgba(58, 44, 32, .38);
+  background: rgba(30, 20, 14, .42);
   display: flex; align-items: flex-end; justify-content: center;
-  opacity: 0; transition: opacity .2s ease;
+  opacity: 0; transition: opacity .35s ease;
 }
 .modal-fondo.visible { opacity: 1; }
 .modal-panel {
   background: var(--crema-2);
   width: 100%; max-width: 520px;
-  border-radius: 22px 22px 0 0;
-  padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
-  max-height: 92vh; overflow-y: auto;
-  transform: translateY(16px); transition: transform .22s cubic-bezier(.2,.8,.2,1);
+  border-radius: 26px 26px 0 0;
+  padding: 8px 18px calc(24px + env(safe-area-inset-bottom));
+  max-height: calc(100% - env(safe-area-inset-top) - 24px);
+  overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
+  /* entra desde abajo del todo, con la curva de las hojas de iOS */
+  transform: translateY(100%);
+  transition: transform .45s var(--hoja-curva);
 }
 .modal-fondo.visible .modal-panel { transform: translateY(0); }
+.modal-panel.arrastrando { transition: none; }
+/* la barrita para arrastrar (deslizar hacia abajo cierra la hoja) */
+.modal-asa {
+  width: 38px; height: 5px; border-radius: 3px;
+  background: color-mix(in srgb, var(--tinta) 22%, transparent);
+  margin: 0 auto 14px;
+  touch-action: none;
+}
+.modal-panel > :not(.modal-asa) { animation: entra .22s ease both; }
 @media (min-width: 560px) {
   .modal-fondo { align-items: center; }
-  .modal-panel { border-radius: 22px; }
+  .modal-panel { border-radius: 22px; padding-top: 20px; transform: translateY(16px) scale(.98); }
+  .modal-fondo.visible .modal-panel { transform: none; }
+  .modal-asa { display: none; }
 }
 
 /* ---- Formularios ---- */
@@ -471,6 +569,31 @@ a.btn-primario, a.btn-plano { text-decoration: none; display: inline-block; text
 /* ---- Transición entre pestañas ---- */
 .vista-inner { animation: vista-entra .22s ease both; }
 @keyframes vista-entra { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---- Explosion de corazones al dar ❤️ ---- */
+.chispa {
+  position: fixed; z-index: 90; pointer-events: none;
+  left: var(--x); top: var(--y);
+  font-size: var(--t, 18px); line-height: 1;
+  animation: chispa 0.85s var(--retraso, 0s) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes chispa {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--giro)); opacity: 0; }
+}
+.latiendo { animation: pop 0.38s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+/* ---- Compartir recuerdo ---- */
+.compartir { display: flex; flex-direction: column; gap: 14px; }
+.compartir h3 { font-size: 20px; }
+.compartir-img {
+  width: 100%; border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(60, 30, 10, 0.22);
+  -webkit-touch-callout: default; /* mantener pulsado = guardar en Fotos */
+}
+.compartir .form-acciones .btn-primario { flex: 1; }
 
 /* ---- Reduce motion ---- */
 @media (prefers-reduced-motion: reduce) {

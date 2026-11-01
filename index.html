@@ -5,73 +5,85 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Nuestra lista</title>
 <meta name="description" content="Nuestra lista de planes y recuerdos, solo para los dos.">
-<meta name="theme-color" content="#f7efe6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a1714" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#b85a32" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#221e19" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<!-- Pantallas de carga (splash) para iOS al abrir desde el icono instalado —
-     sin esto, Safari muestra un parpadeo en blanco antes de cargar. Cubre
-     los tamaños de iPhone de los últimos años, en claro y oscuro; si el
-     modelo no coincide con ninguno, Safari simplemente muestra el blanco
-     de siempre (no rompe nada). -->
-<link rel="apple-touch-startup-image" href="icons/splash/splash-750-x-1334-light.png"
+<!-- Pantallas de carga (splash) para iOS al abrir desde el icono instalado:
+     el fondo del icono a pantalla completa con el monograma, igual que la
+     capa #arranque de abajo, para que el paso de una a otra no se note.
+     Cubre los tamaños de iPhone de los últimos años, en claro y oscuro; si
+     el modelo no coincide con ninguno, Safari muestra el blanco de siempre. -->
+<link rel="apple-touch-startup-image" href="icons/splash/splash-750-x-1334-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-750-x-1334-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-750-x-1334-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-828-x-1792-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-828-x-1792-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-828-x-1792-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-828-x-1792-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1242-x-2688-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1242-x-2688-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1242-x-2688-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1242-x-2688-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1125-x-2436-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1125-x-2436-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1125-x-2436-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1125-x-2436-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1170-x-2532-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1170-x-2532-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1170-x-2532-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1170-x-2532-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1179-x-2556-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1179-x-2556-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1179-x-2556-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1179-x-2556-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1284-x-2778-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1284-x-2778-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1284-x-2778-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1284-x-2778-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1290-x-2796-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1290-x-2796-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1290-x-2796-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1290-x-2796-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1206-x-2622-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1206-x-2622-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1206-x-2622-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1206-x-2622-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1320-x-2868-light.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1320-x-2868-light.jpg"
   media="(prefers-color-scheme: light) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="icons/splash/splash-1320-x-2868-dark.png"
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1320-x-2868-dark.jpg"
   media="(prefers-color-scheme: dark) and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Nuestra lista">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- La app ocupa toda la pantalla, también bajo la hora y la Dynamic
+     Island (la barra de arriba ya deja ese hueco con safe-area-inset-top). -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
-<div id="app"><div class="portada"><div class="logo-grande">🌱</div><p class="sub">Cargando…</p></div></div>
+<!-- Capa de arranque: copia exacta de la pantalla de carga de iOS. Se ve
+     desde el primer instante (no depende del JS), late una vez y se aparta
+     cuando la app tiene los datos (js/app.js: quitarArranque). -->
+<div id="arranque" aria-hidden="true">
+  <img src="icons/monograma.png" alt="">
+  <p>Nuestra lista</p>
+</div>
+<div id="app"></div>
 
 <script>
   // Red de seguridad: si algo revienta (aquí o en cualquier módulo), se ve un
   // aviso con el error en vez de quedarse la pantalla en blanco sin pistas.
   function mostrarErrorFatal(msg) {
+    var arranque = document.getElementById("arranque");
+    if (arranque) arranque.remove();
     var app = document.getElementById("app");
     if (!app) return;
     app.innerHTML =

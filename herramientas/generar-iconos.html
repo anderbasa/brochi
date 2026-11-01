@@ -1,0 +1,156 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600;1,9..144,800&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#222;color:#eee;font:14px sans-serif;padding:16px}canvas{max-width:240px;margin:6px;border-radius:12px}</style>
+</head><body>
+<div id="out"></div>
+<script>
+const S = 1024;
+function lin(ctx, x0, y0, x1, y1, stops) { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function rad(ctx, x, y, r, stops) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function heart(ctx, cx, cy, w) {
+  const h = w, x0 = cx - w / 2, y0 = cy - h / 2, P = (u, v) => [x0 + u * w, y0 + v * h];
+  ctx.beginPath(); ctx.moveTo(...P(0.5, 0.92));
+  ctx.bezierCurveTo(...P(0.5, 0.92), ...P(0.04, 0.62), ...P(0.04, 0.34));
+  ctx.bezierCurveTo(...P(0.04, 0.15), ...P(0.18, 0.06), ...P(0.31, 0.06));
+  ctx.bezierCurveTo(...P(0.41, 0.06), ...P(0.47, 0.11), ...P(0.5, 0.2));
+  ctx.bezierCurveTo(...P(0.53, 0.11), ...P(0.59, 0.06), ...P(0.69, 0.06));
+  ctx.bezierCurveTo(...P(0.82, 0.06), ...P(0.96, 0.15), ...P(0.96, 0.34));
+  ctx.bezierCurveTo(...P(0.96, 0.62), ...P(0.5, 0.92), ...P(0.5, 0.92)); ctx.closePath();
+}
+function sombra(ctx, blur, dy, color) { ctx.shadowColor = color; ctx.shadowBlur = blur; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = dy; }
+let NOISE;
+function grano(ctx, alpha) {
+  if (!NOISE) {
+    NOISE = document.createElement("canvas"); NOISE.width = NOISE.height = S;
+    const n = NOISE.getContext("2d"), img = n.createImageData(S, S);
+    for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+    n.putImageData(img, 0, 0);
+  }
+  ctx.save(); ctx.globalAlpha = alpha; ctx.globalCompositeOperation = "overlay"; ctx.drawImage(NOISE, 0, 0); ctx.restore();
+}
+
+// Monograma (aro + A ♥ N) sobre fondo transparente, en espacio 1024
+function monograma(ctx, escalaSombra = 1) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,236,210,0.30)"; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(512, 512, 360, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  sombra(ctx, 30 * escalaSombra, 14 * escalaSombra, "rgba(60,15,5,0.45)");
+  ctx.fillStyle = lin(ctx, 0, 330, 0, 700, [[0, "#fff6e6"], [0.55, "#f6dcb0"], [1, "#e3b675"]]);
+  ctx.font = "italic 800 400px Fraunces"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("A", 330, 672); ctx.fillText("N", 700, 672);
+  ctx.restore();
+  ctx.save();
+  sombra(ctx, 16 * escalaSombra, 6 * escalaSombra, "rgba(60,15,5,0.4)");
+  ctx.fillStyle = lin(ctx, 0, 560, 0, 670, [[0, "#ffd7b5"], [1, "#f1a978"]]);
+  heart(ctx, 512, 618, 92); ctx.fill();
+  ctx.restore();
+}
+
+// Icono completo (el elegido: D)
+function icono(ctx) {
+  ctx.fillStyle = lin(ctx, 0, 0, S, S, [[0, "#d27748"], [0.6, "#a8492a"], [1, "#6f2a1b"]]);
+  ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = rad(ctx, 300, 220, 700, [[0, "rgba(255,200,150,0.45)"], [1, "rgba(255,200,150,0)"]]);
+  ctx.fillRect(0, 0, S, S);
+  monograma(ctx);
+  ctx.fillStyle = lin(ctx, 0, 0, 0, S, [[0, "rgba(255,255,255,0.22)"], [0.42, "rgba(255,255,255,0)"]]); ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = lin(ctx, 0, S * 0.6, 0, S, [[0, "rgba(40,10,0,0)"], [1, "rgba(40,10,0,0.18)"]]); ctx.fillRect(0, 0, S, S);
+  grano(ctx, 0.045);
+}
+
+function lienzo(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+function aEscala(src, size) {
+  const o = lienzo(size, size), oc = o.getContext("2d");
+  oc.imageSmoothingQuality = "high"; oc.drawImage(src, 0, 0, size, size); return o;
+}
+function squircle(ctx, size, n = 5) {
+  const r = size / 2; ctx.beginPath();
+  for (let i = 0; i <= 360; i++) {
+    const t = (i / 360) * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+    const px = r + r * Math.sign(c) * Math.pow(Math.abs(c), 2 / n), py = r + r * Math.sign(s) * Math.pow(Math.abs(s), 2 / n);
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+}
+
+// Pantalla de carga: el fondo del icono a pantalla completa, con el
+// monograma en el centro y el nombre debajo. Medidas en px CSS * dpr, las
+// MISMAS que usa la animacion de arranque de la app (css: #arranque).
+const FONDOS = {
+  light: { stops: [[0, "#d27748"], [0.6, "#a8492a"], [1, "#6f2a1b"]], glow: "rgba(255,200,150,0.45)" },
+  dark: { stops: [[0, "#93422a"], [0.6, "#5e2617"], [1, "#2a120b"]], glow: "rgba(255,190,140,0.22)" },
+};
+function fondoArranque(ctx, W, H, tema, dpr) {
+  // equivalente exacto de CSS "linear-gradient(to bottom right, ...)"
+  const L = (W * H) / Math.hypot(W, H), dx = H / Math.hypot(W, H), dy = W / Math.hypot(W, H);
+  ctx.fillStyle = lin(ctx, W / 2 - dx * L, H / 2 - dy * L, W / 2 + dx * L, H / 2 + dy * L, FONDOS[tema].stops);
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = rad(ctx, W * 0.25, H * 0.15, 520 * dpr, [[0, FONDOS[tema].glow], [1, "rgba(255,200,150,0)"]]);
+  ctx.fillRect(0, 0, W, H);
+}
+function splash(W, H, dpr, tema, mono) {
+  const c = lienzo(W, H), ctx = c.getContext("2d");
+  fondoArranque(ctx, W, H, tema, dpr);
+  const box = 280 * dpr;
+  ctx.drawImage(mono, W / 2 - box / 2, H / 2 - 170 * dpr, box, box);
+  ctx.fillStyle = "rgba(255,240,222,0.92)";
+  ctx.font = `italic 600 ${30 * dpr}px Fraunces`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("Nuestra lista", W / 2, H / 2 + 160 * dpr);
+  return c;
+}
+
+const TAMANOS = [
+  [750, 1334, 2], [828, 1792, 2], [1242, 2688, 3], [1125, 2436, 3], [1170, 2532, 3],
+  [1179, 2556, 3], [1284, 2778, 3], [1290, 2796, 3], [1206, 2622, 3], [1320, 2868, 3],
+];
+
+async function guardar(nombre, canvas) {
+  const tipo = nombre.endsWith(".jpg") ? "image/jpeg" : "image/png";
+  const r = await fetch("/guardar?nombre=" + encodeURIComponent(nombre), { method: "POST", body: canvas.toDataURL(tipo, 0.9) });
+  return r.text();
+}
+window.soloSplash = async () => {
+  await document.fonts.load("italic 800 100px Fraunces");
+  await document.fonts.load("italic 600 100px Fraunces");
+  const mono = lienzo(S, S); monograma(mono.getContext("2d"));
+  const log = [];
+  for (const [w, h, dpr] of TAMANOS) {
+    for (const tema of ["light", "dark"]) {
+      log.push(await guardar(`splash/splash-${w}-x-${h}-${tema}.jpg`, splash(w, h, dpr, tema, mono)));
+    }
+  }
+  return log;
+};
+
+window.exportarTodo = async () => {
+  await document.fonts.load("italic 800 100px Fraunces");
+  await document.fonts.load("italic 600 100px Fraunces");
+  const log = [];
+  const base = lienzo(S, S); icono(base.getContext("2d"));
+  log.push(await guardar("icon-512.png", aEscala(base, 512)));
+  log.push(await guardar("icon-192.png", aEscala(base, 192)));
+  log.push(await guardar("apple-touch-icon.png", aEscala(base, 180)));
+  // favicon con esquinas de iOS (en pestanas del navegador no hay mascara)
+  const fav = lienzo(64, 64), fc = fav.getContext("2d");
+  squircle(fc, 64); fc.clip(); fc.imageSmoothingQuality = "high"; fc.drawImage(base, 0, 0, 64, 64);
+  log.push(await guardar("favicon.png", fav));
+  // monograma suelto, transparente, para la app (280px CSS @3x)
+  const mono = lienzo(S, S); monograma(mono.getContext("2d"));
+  log.push(await guardar("monograma.png", aEscala(mono, 840)));
+  // pantallas de carga, en JPG: en PNG pesan ~3,5 MB cada una por el
+  // tramado que el navegador mete en los degradados; en JPG, ~80 KB
+  for (const [w, h, dpr] of TAMANOS) {
+    for (const tema of ["light", "dark"]) {
+      log.push(await guardar(`splash/splash-${w}-x-${h}-${tema}.jpg`, splash(w, h, dpr, tema, mono)));
+    }
+  }
+  // vista previa
+  const out = document.getElementById("out");
+  out.append(aEscala(base, 240), splash(1170, 2532, 3, "light", mono), splash(1170, 2532, 3, "dark", mono));
+  return log;
+};
+</script>
+</body></html>

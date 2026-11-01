@@ -147,7 +147,7 @@ function tarjetaPlan(plan) {
   const acciones = el("div", { class: "plan-acciones" });
   if (plan.estado === "pendiente") {
     acciones.append(
-      el("button", { class: "btn-completar", onclick: () => formRecuerdo(plan) }, "Completar"),
+      el("button", { class: "btn-completar", onclick: () => { vibrar(); formRecuerdo(plan); } }, "Completar"),
       el("button", { class: "icono-btn", title: "Editar", onclick: () => formPlan(plan) }, "✏️"),
       el("button", { class: "icono-btn", title: "Borrar", onclick: () => pedirBorrado(plan) }, "🗑️")
     );
@@ -231,6 +231,7 @@ function formPlan(plan = null) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!titulo.value.trim()) return;
+    vibrar();
     guardar.disabled = true;
     guardar.textContent = "Guardando…";
     try {
@@ -282,6 +283,7 @@ function formRecuerdo(plan) {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    vibrar(); // al tocar, no al terminar: en iPhone el háptico solo vale dentro del toque
     guardar.disabled = true;
     guardar.textContent = "Guardando…";
     try {
@@ -293,7 +295,6 @@ function formRecuerdo(plan) {
       await completarPlan(plan, { nota: nota.value, ubicacion, fotosBlobs }, store.persona.id);
       cerrarModal();
       aviso("Recuerdo guardado 💛");
-      vibrar([25, 40, 25]);
       lanzarConfeti();
     } catch (err) {
       console.error(err);

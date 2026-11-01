@@ -46,36 +46,65 @@ const app = document.getElementById("app");
 function iniciar(persona) {
   store.set({ persona });
   montarShell();
-  subscribePlanes((planes) => store.set({ planes, cargando: false }));
+  subscribePlanes((planes) => {
+    store.set({ planes, cargando: false });
+    quitarArranque();
+  });
   subscribeRecuerdos((recuerdos) => store.set({ recuerdos }));
   window.addEventListener("hashchange", router);
   router();
+  setTimeout(quitarArranque, 2500); // por si no hay red: no dejar la capa puesta
+}
+
+// ---- Arranque ---------------------------------------------------
+// La capa #arranque (index.html) es una copia de la pantalla de carga de
+// iOS: se queda al menos lo que dura el "latido" del monograma y se aparta
+// con un zoom suave en cuanto hay datos.
+let arranqueQuitado = false;
+function quitarArranque() {
+  if (arranqueQuitado) return;
+  arranqueQuitado = true;
+  const capa = document.getElementById("arranque");
+  if (!capa) return;
+  const espera = Math.max(0, 1050 - performance.now());
+  setTimeout(() => {
+    capa.classList.add("saliendo");
+    setTimeout(() => capa.remove(), 500);
+  }, espera);
 }
 
 // ---- Pantalla "¿Quién eres?" ------------------------------------
 
 function pantallaQuienEres() {
   limpiar(app);
-  const tarjeta = el("div", { class: "portada" },
-    el("div", { class: "logo-grande", text: "🌱" }),
-    el("h1", { text: "Nuestra lista" }),
-    el("p", { class: "sub", text: "Planes y recuerdos, solo para los dos." }),
-    el("p", { class: "pregunta", text: "¿Quién eres?" }),
-    el("div", { class: "botones-persona" },
-      ...Object.values(PERSONAS).map((p) =>
-        el("button", {
-          class: "btn-persona",
-          style: `--c:${p.color}`,
-          onclick: () => { guardarPersona(p.id); location.reload(); },
-        }, p.nombre)
-      )
-    ),
-    el("p", { class: "nota-pie", text: "Se recuerda en este móvil. Podrás cambiarlo luego." })
+  const tarjeta = el("div", { class: "portada-marca" },
+    el("div", { class: "portada" },
+      el("img", { class: "logo-portada", src: "icons/icon-512.png", alt: "" }),
+      el("h1", { text: "Nuestra lista" }),
+      el("p", { class: "sub", text: "Planes y recuerdos, solo para los dos." }),
+      el("p", { class: "pregunta", text: "¿Quién eres?" }),
+      el("div", { class: "botones-persona" },
+        ...Object.values(PERSONAS).map((p) =>
+          el("button", {
+            class: "btn-persona",
+            style: `--c:${p.color}`,
+            onclick: () => {
+              vibrar();
+              guardarPersona(p.id);
+              iniciar(p);
+            },
+          }, p.nombre)
+        )
+      ),
+      el("p", { class: "nota-pie", text: "Se recuerda en este móvil. Podrás cambiarlo luego." })
+    )
   );
   app.append(tarjeta);
+  quitarArranque();
 }
 
 function pantallaConfig() {
+  quitarArranque();
   limpiar(app);
   const faltaFirebase = !firebaseListo();
   const faltaSupabase = !supabaseListo();
@@ -109,7 +138,10 @@ let vista;
 function montarShell() {
   limpiar(app);
   const header = el("header", { class: "topbar" },
-    el("span", { class: "marca", text: "Nuestra lista" }),
+    el("a", { href: "#home", class: "marca", style: "color:inherit;text-decoration:none" },
+      el("img", { src: "icons/icon-192.png", alt: "" }),
+      "Nuestra lista"
+    ),
     el("button", {
       class: "chip-persona",
       title: "Cambiar de persona",
