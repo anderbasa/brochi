@@ -18,8 +18,9 @@ import {
   diasHasta,
 } from "./ui.js";
 import { renderLista } from "./vista-lista.js";
-import { renderRecuerdos } from "./vista-recuerdos.js";
+import { renderRecuerdos, abrirRecuerdo } from "./vista-recuerdos.js";
 import { renderMapa } from "./vista-mapa.js";
+import { avisarCambios, recordarReacciones } from "./avisos.js";
 
 // ---- Estado global (mini "store") -----------------------------------
 
@@ -46,11 +47,17 @@ const app = document.getElementById("app");
 function iniciar(persona) {
   store.set({ persona });
   montarShell();
-  subscribePlanes((planes) => {
+  const acciones = { irALista: () => (location.hash = "#lista"), abrirRecuerdo };
+  subscribePlanes((planes, cambios) => {
     store.set({ planes, cargando: false });
     quitarArranque();
+    avisarCambios("planes", cambios, persona.id, acciones);
   });
-  subscribeRecuerdos((recuerdos) => store.set({ recuerdos }));
+  subscribeRecuerdos((recuerdos, cambios) => {
+    avisarCambios("recuerdos", cambios, persona.id, acciones); // antes de recordar: compara con lo anterior
+    recordarReacciones(recuerdos);
+    store.set({ recuerdos });
+  });
   window.addEventListener("hashchange", router);
   router();
   setTimeout(quitarArranque, 2500); // por si no hay red: no dejar la capa puesta
@@ -126,11 +133,28 @@ function pantallaConfig() {
 
 // ---- Shell con pestañas -----------------------------------------
 
+// Iconos de linea al estilo de iOS: .i-forma se rellena en la pestaña
+// activa y .i-det (los detalles) pasa al color del fondo de la barra, como
+// los SF Symbols en version "fill".
+const svg = (cuerpo) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true">${cuerpo}</svg>`;
 const TABS = [
-  { hash: "#home", icono: "🏠", texto: "Inicio" },
-  { hash: "#lista", icono: "📝", texto: "Lista" },
-  { hash: "#recuerdos", icono: "📸", texto: "Recuerdos" },
-  { hash: "#mapa", icono: "🗺️", texto: "Mapa" },
+  {
+    hash: "#home", texto: "Inicio",
+    icono: svg('<path class="i-forma" d="M4 10.3 12 3.7l8 6.6V19a1.6 1.6 0 0 1-1.6 1.6H15v-5.2a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5.2H5.6A1.6 1.6 0 0 1 4 19z"/>'),
+  },
+  {
+    hash: "#lista", texto: "Lista",
+    icono: svg('<rect class="i-forma" x="4.6" y="3.4" width="14.8" height="17.2" rx="3.4"/><path class="i-det" d="M8 9.4l1.4 1.4 2.5-2.7M8 15.1l1.4 1.4 2.5-2.7M14.2 9.6h2M14.2 15.3h2"/>'),
+  },
+  {
+    hash: "#recuerdos", texto: "Recuerdos",
+    icono: svg('<rect class="i-forma" x="3.4" y="5" width="17.2" height="14" rx="3.2"/><path class="i-det" d="M3.8 16.6l4.4-4.3a1.2 1.2 0 0 1 1.7 0l3.6 3.6M12.9 15l1.6-1.6a1.2 1.2 0 0 1 1.7 0l3.9 3.8"/><circle class="i-det i-punto" cx="15.6" cy="9.4" r="1.4"/>'),
+  },
+  {
+    hash: "#mapa", texto: "Mapa",
+    icono: svg('<path class="i-forma" d="M9 4.5 4 6.3a1 1 0 0 0-.6.9v12a.7.7 0 0 0 .9.7L9 18.2l6 2.2 5-1.8a1 1 0 0 0 .6-.9v-12a.7.7 0 0 0-.9-.7L15 6.7z"/><path class="i-det" d="M9 4.5v13.7M15 6.7v13.7"/>'),
+  },
 ];
 
 let vista;
@@ -152,7 +176,7 @@ function montarShell() {
   const nav = el("nav", { class: "tabbar" },
     ...TABS.map((t) =>
       el("a", { href: t.hash, class: "tab", "data-hash": t.hash },
-        el("span", { class: "tab-icono", text: t.icono }),
+        el("span", { class: "tab-icono", html: t.icono }),
         el("span", { class: "tab-texto", text: t.texto })
       )
     )

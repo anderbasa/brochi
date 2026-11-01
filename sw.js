@@ -1,6 +1,6 @@
 // Cachea el "cascarón" (HTML/CSS/JS/iconos) para abrir rápido y offline.
 // Los datos (Firestore) y las fotos (Storage) nunca pasan por aquí: siempre red.
-const CACHE = "brochi-v9";
+const CACHE = "brochi-v10";
 // Ojo: si un archivo de esta lista no existe, addAll() falla y el service
 // worker entero no se instala. Mantenerla al dia al renombrar/borrar.
 const ASSETS = [
@@ -8,7 +8,9 @@ const ASSETS = [
   "./index.html",
   "./css/estilo.css",
   "./js/app.js",
+  "./js/avisos.js",
   "./js/compartir.js",
+  "./js/visor.js",
   "./js/config.js",
   "./js/firebase.js",
   "./js/fotos.js",

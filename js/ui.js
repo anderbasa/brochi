@@ -113,6 +113,71 @@ function activarArrastre(panel, fondo) {
   panel.addEventListener("touchcancel", fin);
 }
 
+// ---- Avisos en directo (estilo notificacion de iOS) --------------------
+//
+// Bajan desde arriba de uno en uno, se van solos a los ~4 s, se cierran
+// deslizando hacia arriba y al tocarlos llevan a lo que avisan.
+
+const colaAvisos = [];
+let avisoEnPantalla = false;
+
+export function notificacion({ titulo, texto = "", alTocar = null }) {
+  colaAvisos.push({ titulo, texto, alTocar });
+  if (!avisoEnPantalla) siguienteNotificacion();
+}
+
+function siguienteNotificacion() {
+  const n = colaAvisos.shift();
+  if (!n) { avisoEnPantalla = false; return; }
+  avisoEnPantalla = true;
+
+  const tarjeta = el("div", { class: "notif", role: "status", "aria-live": "polite" },
+    el("img", { src: "icons/icon-192.png", alt: "" }),
+    el("div", { class: "notif-cuerpo" },
+      el("div", { class: "notif-cab" }, el("span", { text: "Nuestra lista" }), el("span", { text: "ahora" })),
+      el("div", { class: "notif-tit", text: n.titulo }),
+      n.texto && el("div", { class: "notif-txt", text: n.texto })
+    )
+  );
+  document.body.append(tarjeta);
+  tarjeta.getBoundingClientRect();
+  tarjeta.classList.add("visible");
+
+  let cerrada = false;
+  const cerrar = () => {
+    if (cerrada) return;
+    cerrada = true;
+    clearTimeout(temporizador);
+    tarjeta.classList.remove("visible");
+    setTimeout(() => { tarjeta.remove(); siguienteNotificacion(); }, 450);
+  };
+  const temporizador = setTimeout(cerrar, colaAvisos.length ? 3000 : 4200);
+
+  let y0 = null, movido = false;
+  tarjeta.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; movido = false; }, { passive: true });
+  tarjeta.addEventListener("touchmove", (e) => {
+    if (y0 === null) return;
+    const dy = e.touches[0].clientY - y0;
+    if (Math.abs(dy) > 6) movido = true;
+    e.preventDefault();
+    tarjeta.classList.add("arrastrando");
+    tarjeta.style.transform = `translateY(${dy < 0 ? dy : dy / 5}px)`;
+  }, { passive: false });
+  tarjeta.addEventListener("touchend", (e) => {
+    if (y0 === null) return;
+    const dy = e.changedTouches[0].clientY - y0;
+    y0 = null;
+    tarjeta.classList.remove("arrastrando");
+    tarjeta.style.transform = "";
+    if (dy < -25) cerrar();
+  });
+  tarjeta.addEventListener("click", () => {
+    if (movido) return;
+    cerrar();
+    if (n.alTocar) n.alTocar();
+  });
+}
+
 // ---- Explosion de corazones -------------------------------------------
 
 // Lanza unos corazones desde el centro de `origen` (un elemento del DOM).

@@ -78,12 +78,29 @@ function ms(ts) {
   return ts.toMillis ? ts.toMillis() : new Date(ts).getTime();
 }
 
+// El callback recibe (lista, cambios). `cambios` son los documentos que han
+// llegado/cambiado desde la ultima vez — vacio en la primera carga, y sin
+// los cambios que acaba de hacer este mismo movil (aun "pendientes" de
+// subir). Sirve para los avisos en directo de js/avisos.js.
+function escuchar(nombre, callback) {
+  let primera = true;
+  return onSnapshot(collection(db, nombre), (snap) => {
+    const cambios = primera
+      ? []
+      : snap.docChanges()
+          .filter((c) => !c.doc.metadata.hasPendingWrites)
+          .map((c) => ({ tipo: c.type, id: c.doc.id, datos: c.doc.data() }));
+    primera = false;
+    callback(ordenados(snap), cambios);
+  });
+}
+
 export function subscribePlanes(callback) {
-  return onSnapshot(collection(db, "planes"), (snap) => callback(ordenados(snap)));
+  return escuchar("planes", callback);
 }
 
 export function subscribeRecuerdos(callback) {
-  return onSnapshot(collection(db, "recuerdos"), (snap) => callback(ordenados(snap)));
+  return escuchar("recuerdos", callback);
 }
 
 // ---- Planes ---------------------------------------------------------------

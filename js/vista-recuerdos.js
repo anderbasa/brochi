@@ -11,6 +11,7 @@ import {
 import { store, observarSalida } from "./app.js";
 import { comprimirVarias } from "./imagenes.js";
 import { compartirRecuerdo } from "./compartir.js";
+import { abrirVisor } from "./visor.js";
 import {
   el,
   limpiar,
@@ -173,14 +174,24 @@ function corazonDetalle(r) {
 
 // ---- Detalle ------------------------------------------------------
 
+// Para los avisos en directo: ir a Recuerdos y abrir uno en concreto.
+export function abrirRecuerdo(id) {
+  if (location.hash !== "#recuerdos") location.hash = "#recuerdos";
+  setTimeout(() => detalle(id), 60);
+}
+
 function detalle(id) {
   const r = store.recuerdos.find((x) => x.id === id);
   if (!r) return;
 
   const galeria = el("div", { class: "galeria-detalle" },
-    ...(r.fotos || []).map((url) =>
+    ...(r.fotos || []).map((url, i) =>
       el("div", { class: "foto-detalle" },
-        el("img", { src: url, alt: "", onclick: () => verGrande(url) }),
+        el("img", {
+          src: url,
+          alt: "",
+          onclick: (e) => abrirVisor(r.fotos, i, { titulo: r.titulo, origen: e.currentTarget }),
+        }),
         el("button", { class: "quita-foto", title: "Quitar foto", onclick: async () => {
           if (await confirmar("¿Quitar esta foto del recuerdo?")) {
             await borrarFotoDeRecuerdo(r.id, url, r.fotos);
@@ -223,13 +234,6 @@ function detalle(id) {
   );
 
   abrirModal(cont);
-}
-
-function verGrande(url) {
-  const v = el("div", { class: "visor", onclick: () => v.remove() },
-    el("img", { src: url, alt: "" })
-  );
-  document.body.append(v);
 }
 
 // ---- Editar ------------------------------------------------------

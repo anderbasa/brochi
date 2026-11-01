@@ -19,9 +19,13 @@ NFC al móvil (la pegatina apunta a la URL de GitHub Pages).
   propia que enlaza con una animación de "latido" al abrir, la app a
   pantalla completa bajo la Dynamic Island, hojas que se cierran
   deslizando hacia abajo como las de iOS, toque háptico real al completar
-  un plan o dar ❤️ (iOS 18 o posterior), explosión de corazones, y
+  un plan o dar ❤️ (iOS 18 o posterior), explosión de corazones,
   **compartir un recuerdo** como tarjeta (foto + título + fecha + lugar)
-  con el menú de compartir de iOS.
+  con el menú de compartir de iOS, **visor de fotos** como el de Fotos
+  (deslizar, pellizcar, doble toque, arrastrar abajo para cerrar), iconos
+  de línea en la barra de abajo que se rellenan en la pestaña activa, y
+  **avisos en directo**: con la app abierta, si el otro añade un plan,
+  guarda un recuerdo o da un ❤️, baja una notificación desde arriba.
 
 Los planes y recuerdos se sincronizan en vivo entre los dos móviles con
 **Firestore** (Firebase); las fotos van a **Supabase Storage** (comprimidas
@@ -208,6 +212,8 @@ brochi/
 │   ├── vista-lista.js      → lista de deseos
 │   ├── vista-recuerdos.js  → recuerdos
 │   ├── vista-mapa.js       → mapa (Leaflet + OpenStreetMap)
+│   ├── visor.js            → visor de fotos a pantalla completa
+│   ├── avisos.js           → avisos en directo de lo que hace el otro
 │   └── compartir.js        → tarjeta para compartir un recuerdo
 ├── icons/
 │   ├── icon-*.png · apple-touch-icon.png · favicon.png → el icono A♥N
