@@ -320,26 +320,45 @@ export function diasHasta(fechaISO) {
 // - Android: navigator.vibrate().
 // - iPhone: Safari no tiene vibrate(), pero desde iOS 18 un interruptor
 //   nativo (<input type="checkbox" switch>) da un "tic" háptico al cambiar
-//   de estado, igual que los de Ajustes. Se crea uno invisible y se pulsa.
-//   Solo funciona si se llama DURANTE el toque del usuario (en el onclick,
-//   antes de cualquier await), por eso las vistas lo llaman al principio.
+//   de estado, igual que los de Ajustes. Hay uno invisible en la pagina y se
+//   pulsa su etiqueta.
+//   - Tiene que llamarse DURANTE el toque del usuario (en el onclick, antes
+//     de cualquier await): por eso las vistas lo llaman al principio.
+//   - El interruptor esta en <body>, pintado (opacidad casi 0, no
+//     display:none) y no se borra: un primer intento lo creaba en <head> con
+//     display:none y lo quitaba al instante, y en un iPhone real no vibraba.
+//   - Necesita "Vibración del sistema" activada en Ajustes > Sonidos y
+//     vibraciones del iPhone.
 const ES_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let etiquetaHaptica = null;
+function interruptorHaptico() {
+  if (etiquetaHaptica && etiquetaHaptica.isConnected) return etiquetaHaptica;
+  etiquetaHaptica = document.createElement("label");
+  etiquetaHaptica.setAttribute("aria-hidden", "true");
+  etiquetaHaptica.style.cssText =
+    "position:fixed;left:0;bottom:0;width:52px;height:32px;opacity:0.011;" +
+    "pointer-events:none;z-index:-1;overflow:hidden";
+  const interruptor = document.createElement("input");
+  interruptor.type = "checkbox";
+  interruptor.setAttribute("switch", "");
+  interruptor.tabIndex = -1;
+  etiquetaHaptica.append(interruptor);
+  document.body.append(etiquetaHaptica);
+  return etiquetaHaptica;
+}
 export function vibrar(patron = 30) {
   try {
     if (navigator.vibrate) { navigator.vibrate(patron); return; }
     if (!ES_IOS) return;
-    const etiqueta = document.createElement("label");
-    etiqueta.setAttribute("aria-hidden", "true");
-    etiqueta.style.display = "none";
-    const interruptor = document.createElement("input");
-    interruptor.type = "checkbox";
-    interruptor.setAttribute("switch", "");
-    etiqueta.append(interruptor);
-    document.head.append(etiqueta);
-    etiqueta.click();
-    etiqueta.remove();
+    interruptorHaptico().click();
   } catch (_) {}
+}
+// Se crea en cuanto carga la pagina, para que ya este pintado en el primer
+// toque (si se crea en ese mismo toque puede que iOS no llegue a vibrar).
+if (ES_IOS) {
+  if (document.body) interruptorHaptico();
+  else addEventListener("DOMContentLoaded", interruptorHaptico, { once: true });
 }
 
 // ---- Skeleton (siluetas de carga) ------------------------------------
