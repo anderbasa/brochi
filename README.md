@@ -8,12 +8,23 @@ NFC al móvil (la pegatina apunta a la URL de GitHub Pages).
   Pendientes / Hechos, con buscador y filtro por categoría.
 - **Recuerdos**: al completar un plan, se guarda con fotos, nota y lugar.
   Reacción ❤️ y buscador también.
-- **Mapa** con un pin por cada recuerdo que tenga ubicación.
+- **Mapa** a pantalla completa, como el de Fotos: cada recuerdo es un pin
+  con su foto, los cercanos se juntan en una burbuja con el número, y abajo
+  hay un carrusel de tarjetas (deslizarlo mueve el mapa; tocar un pin mueve
+  el carrusel). Los recuerdos **sin sitio** se pueden poner en el mapa
+  cuando sea, aunque haya pasado tiempo.
+- **Elegir el sitio a mano** ("soltar un pin", como en Mapas): al completar
+  un plan, al editar un recuerdo o desde su detalle. El pin se queda en el
+  centro y se mueve el mapa; también se puede buscar un sitio por nombre o
+  usar la ubicación actual. Debajo sale el nombre del sitio.
+- **Nuestro año**: el resumen del año en historias a pantalla completa (tipo
+  Wrapped): planes cumplidos, recuerdos y fotos, el mes con más recuerdos,
+  la categoría favorita, los sitios, quién ha dado más ❤️, el recuerdo del
+  año y lo que queda por venir. Al final se comparte como imagen.
 - **Inicio**: contador de "días juntos", "un día como hoy" (recuerdos de la
   misma fecha en años anteriores), countdown grande del próximo plan con
-  fecha, último recuerdo, contadores, "🎲 Sorpréndeme" (plan pendiente al
-  azar), "🎞️ Recuerdo al azar" y "📊 Resumen" (planes cumplidos, categoría
-  favorita, sitios visitados, primer recuerdo, el más querido...).
+  fecha, la tarjeta de "Nuestro año", último recuerdo, contadores,
+  "🎲 Sorpréndeme" (plan pendiente al azar) y "🎞️ Recuerdo al azar".
 - **Modo oscuro automático** (sigue el ajuste del sistema del móvil).
 - **Hecha para iPhone**: icono con vuestro monograma A♥N, pantalla de carga
   propia que enlaza con una animación de "latido" al abrir, la app a
@@ -26,6 +37,9 @@ NFC al móvil (la pegatina apunta a la URL de GitHub Pages).
   de línea en la barra de abajo que se rellenan en la pestaña activa, y
   **avisos en directo**: con la app abierta, si el otro añade un plan,
   guarda un recuerdo o da un ❤️, baja una notificación desde arriba.
+  Y animaciones de iPhone: **mantener pulsada** una tarjeta la levanta y
+  saca un menú (como el Haptic Touch), las tarjetas entran en cascada con
+  efecto muelle, las pestañas se funden al cambiar y los números cuentan.
 
 Los planes y recuerdos se sincronizan en vivo entre los dos móviles con
 **Firestore** (Firebase); las fotos van a **Supabase Storage** (comprimidas
@@ -211,7 +225,10 @@ brochi/
 │   ├── app.js              → shell, pestañas, estado en vivo, arranque, Inicio
 │   ├── vista-lista.js      → lista de deseos
 │   ├── vista-recuerdos.js  → recuerdos
-│   ├── vista-mapa.js       → mapa (Leaflet + OpenStreetMap)
+│   ├── vista-mapa.js       → mapa con pines de foto y carrusel (Leaflet)
+│   ├── mapa-comun.js       → teselas OSM, búsqueda de sitios, mini mapa
+│   ├── selector-mapa.js    → elegir un sitio a mano ("soltar un pin")
+│   ├── resumen-anual.js    → "Nuestro año" en historias
 │   ├── visor.js            → visor de fotos a pantalla completa
 │   ├── avisos.js           → avisos en directo de lo que hace el otro
 │   └── compartir.js        → tarjeta para compartir un recuerdo
@@ -246,6 +263,21 @@ navegador, `await exportarTodo()` reescribe todo en `icons/`. Los tamaños
 de iPhone están en la lista `TAMANOS` de ese archivo y en los
 `apple-touch-startup-image` de `index.html`: si añadís un modelo nuevo,
 hay que tocar los dos sitios.
+
+## El mapa: todo gratis y sin claves
+
+- Las **teselas** son las de OpenStreetMap, con un filtro CSS para que
+  casen con los colores de la app (y otro para el modo oscuro). Los de
+  CARTO, más bonitos, ahora piden clave: por eso no se usan.
+- La **búsqueda de sitios** y el nombre bajo el pin son de Nominatim
+  (OpenStreetMap). Sus normas: no buscar mientras se escribe (solo al pulsar
+  Buscar) y no más de una petición por segundo; la app ya lo respeta.
+- Las **burbujas** que juntan pines son Leaflet.markercluster (cdnjs).
+
+Ojo al tocar los formularios: un campo con varios botones dentro (fotos,
+categorías, ubicación) tiene que ir en un `<div>`, no en un `<label>`. En
+iPhone, cualquier toque dentro de un `<label>` pulsa su primer botón: eso
+fue lo que estropeó el primer intento de elegir el sitio en el mapa.
 
 ---
 

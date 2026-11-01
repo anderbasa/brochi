@@ -17,7 +17,7 @@ async function cargarFoto(url) {
   return createImageBitmap(await resp.blob());
 }
 
-function cargarLocal(src) {
+export function cargarLocal(src) {
   return new Promise((ok, ko) => {
     const img = new Image();
     img.onload = () => ok(img);

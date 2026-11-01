@@ -11,6 +11,7 @@ import {
 } from "./firebase.js";
 import { store, observarSalida } from "./app.js";
 import { comprimirImagen, comprimirVarias } from "./imagenes.js";
+import { campoUbicacion } from "./selector-mapa.js";
 import {
   el,
   limpiar,
@@ -23,13 +24,16 @@ import {
   campoFotos,
   vibrar,
   skeleton,
+  menuContextual,
 } from "./ui.js";
+import { verRecuerdo } from "./vista-recuerdos.js";
 
 let filtro = "pendiente"; // "pendiente" | "hecho"
 let busqueda = "";
 let categoriaFiltro = null;
 
 export function renderLista(cont) {
+  let conocidos = null; // ids ya pintados: solo se animan los que llegan nuevos
   const pintar = () => {
     // Conserva el foco/cursor del buscador: al escribir, `input` dispara
     // pintar() y esto reconstruye TODO el DOM (incluido un <input> nuevo);
@@ -71,7 +75,9 @@ export function renderLista(cont) {
         )
       );
     } else {
-      cont.append(el("ul", { class: "lista-planes" }, ...planes.map(tarjetaPlan)));
+      cont.append(el("ul", { class: "lista-planes" },
+        ...planes.map((p, i) => tarjetaPlan(p, i, conocidos && !conocidos.has(p.id)))
+      ));
     }
 
     cont.append(
@@ -85,6 +91,8 @@ export function renderLista(cont) {
         if (cursor != null) nuevo.setSelectionRange(cursor, cursor);
       }
     }
+    // al cambiar de filtro no hay "nuevos": se conocen todos los planes
+    if (!store.cargando) conocidos = new Set(store.planes.map((p) => p.id));
   };
 
   pintar();
@@ -127,7 +135,7 @@ function boton(valor, texto, n, pintar) {
   }, `${texto} (${n})`);
 }
 
-function tarjetaPlan(plan) {
+function tarjetaPlan(plan, i = 0, nuevo = false) {
   const cat = CATEGORIAS.find((c) => c.id === plan.categoria);
   const ca = plan.estado === "pendiente" ? cuentaAtras(plan.fechaObjetivo) : null;
 
@@ -153,7 +161,7 @@ function tarjetaPlan(plan) {
     );
   } else {
     if (plan.recuerdoId) {
-      acciones.append(el("a", { class: "btn-plano", href: "#recuerdos" }, "Ver recuerdo"));
+      acciones.append(el("button", { type: "button", class: "btn-plano", onclick: () => verRecuerdo(plan.recuerdoId) }, "Ver recuerdo"));
     }
     acciones.append(
       el("button", { class: "icono-btn", title: "Marcar pendiente", onclick: async () => {
@@ -164,11 +172,23 @@ function tarjetaPlan(plan) {
     );
   }
 
-  return el("li", { class: "plan" + (plan.fotoRef ? " con-foto" : "") },
+  const tarjeta = el("li", { class: "plan" + (plan.fotoRef ? " con-foto" : "") + (nuevo ? " nuevo" : ""), style: `--i:${i}` },
     plan.fotoRef && el("div", { class: "plan-foto" }, el("img", { src: plan.fotoRef, alt: "", loading: "lazy" })),
     cuerpo,
     acciones
   );
+  menuContextual(tarjeta, () => plan.estado === "pendiente"
+    ? [
+        { texto: "Completar", icono: "✅", accion: () => formRecuerdo(plan) },
+        { texto: "Editar", icono: "✏️", accion: () => formPlan(plan) },
+        { texto: "Borrar", icono: "🗑️", peligro: true, accion: () => pedirBorrado(plan) },
+      ]
+    : [
+        plan.recuerdoId && { texto: "Ver recuerdo", icono: "📸", accion: () => verRecuerdo(plan.recuerdoId) },
+        { texto: "Volver a pendientes", icono: "↩️", accion: async () => { await marcarPendiente(plan.id); aviso("Vuelve a pendientes"); } },
+        { texto: "Borrar", icono: "🗑️", peligro: true, accion: () => pedirBorrado(plan) },
+      ]);
+  return tarjeta;
 }
 
 async function pedirBorrado(plan) {
@@ -262,9 +282,7 @@ function formRecuerdo(plan) {
   const lugar = el("input", { type: "text", maxlength: 160, placeholder: "Ej. Playa de la Concha, San Sebastián" });
   const fotos = campoFotos({ multiple: true, etiqueta: "Fotos del recuerdo" });
 
-  let coords = null;
-  const btnGeo = el("button", { type: "button", class: "btn-foto", onclick: () => pedirUbicacion(btnGeo, (c) => (coords = c)) }, "📍 Usar mi ubicación");
-  const geoEstado = el("span", { class: "geo-estado" });
+  const sitio = campoUbicacion({ lugar });
 
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar recuerdo");
 
@@ -273,7 +291,7 @@ function formRecuerdo(plan) {
     el("p", { class: "form-sub", text: `"${plan.titulo}" pasa a Recuerdos. Añade una nota y fotos.` }),
     campo("Nota", nota),
     campo("Lugar (texto libre)", lugar),
-    campo("Ubicación en el mapa (opcional)", el("div", { class: "geo-fila" }, btnGeo, geoEstado)),
+    sitio.nodo,
     campo("Fotos", fotos.nodo),
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: cerrarModal }, "Ahora no"),
@@ -288,6 +306,7 @@ function formRecuerdo(plan) {
     guardar.textContent = "Guardando…";
     try {
       const fotosBlobs = await comprimirVarias(fotos.archivos());
+      const coords = sitio.valor();
       const ubicacion =
         lugar.value.trim() || coords
           ? { texto: lugar.value.trim(), lat: coords?.lat ?? null, lng: coords?.lng ?? null }
@@ -307,32 +326,13 @@ function formRecuerdo(plan) {
   abrirModal(form);
 }
 
-function pedirUbicacion(boton, onOk) {
-  const estado = boton.parentElement.querySelector(".geo-estado");
-  if (!navigator.geolocation) {
-    estado.textContent = "Este móvil no da ubicación";
-    return;
-  }
-  boton.disabled = true;
-  estado.textContent = "Pidiendo permiso…";
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      onOk({ lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6) });
-      estado.textContent = "Ubicación añadida ✓";
-      boton.disabled = false;
-    },
-    (err) => {
-      estado.textContent = err.code === 1 ? "Permiso denegado" : "No se pudo obtener";
-      boton.disabled = false;
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
 // ---- Helpers de formulario ----------------------------------------
 
+// <label> solo si dentro hay un unico control: con varios botones (fotos),
+// en iPhone un toque en cualquier parte del label pulsaria el primero.
 function campo(etiqueta, control) {
-  return el("label", { class: "campo" },
+  const tag = control.matches?.("input, textarea, select") ? "label" : "div";
+  return el(tag, { class: "campo" },
     el("span", { class: "campo-et", text: etiqueta }),
     control
   );

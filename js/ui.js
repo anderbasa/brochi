@@ -441,3 +441,128 @@ export function campoFotos({ multiple = true, etiqueta = "Añadir fotos" } = {})
     archivos: () => files,
   };
 }
+
+// ---- Menu al mantener pulsado (el "Haptic Touch" de iOS) ------------------
+//
+// Al mantener el dedo, la tarjeta se hunde un poco; al rato "salta" hacia
+// arriba, el resto de la pantalla se desenfoca y aparece un menu debajo.
+// `opciones()` devuelve [{ texto, icono, accion, peligro }] (null = se salta).
+// En el ordenador sale con el boton derecho.
+
+const ESPERA_MENU = 450;
+
+export function menuContextual(nodo, opciones) {
+  let t = null, inicio = null, disparado = false;
+  const cancelar = () => { clearTimeout(t); nodo.classList.remove("presionando"); inicio = null; };
+
+  nodo.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return cancelar();
+    disparado = false;
+    inicio = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    nodo.classList.add("presionando");
+    t = setTimeout(() => {
+      disparado = true;
+      nodo.classList.remove("presionando");
+      abrirMenuContextual(nodo, opciones());
+    }, ESPERA_MENU);
+  }, { passive: true });
+  nodo.addEventListener("touchmove", (e) => {
+    if (inicio && Math.hypot(e.touches[0].clientX - inicio.x, e.touches[0].clientY - inicio.y) > 10) cancelar();
+  }, { passive: true });
+  nodo.addEventListener("touchend", (e) => {
+    cancelar();
+    if (disparado) e.preventDefault(); // sin el "click" de despues: no abre la tarjeta
+  });
+  nodo.addEventListener("touchcancel", cancelar);
+  // por si algun navegador manda el click igualmente
+  nodo.addEventListener("click", (e) => {
+    if (!disparado) return;
+    disparado = false;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+  nodo.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    cancelar();
+    abrirMenuContextual(nodo, opciones());
+  });
+}
+
+function abrirMenuContextual(nodo, opciones) {
+  if (document.querySelector(".menu-ctx") || !nodo.isConnected) return;
+  const items = opciones.filter(Boolean);
+  if (!items.length) return;
+  vibrar(12);
+
+  const r = nodo.getBoundingClientRect();
+  const copia = nodo.cloneNode(true);
+  copia.classList.remove("presionando");
+  copia.classList.add("menu-ctx-copia");
+  copia.setAttribute("aria-hidden", "true");
+  copia.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+
+  const lista = el("div", { class: "menu-ctx-lista", role: "menu" },
+    ...items.map((it) =>
+      el("button", {
+        type: "button",
+        role: "menuitem",
+        class: it.peligro ? "peligro" : "",
+        onclick: () => { cerrar(); it.accion(); },
+      },
+        el("span", { text: it.texto }),
+        el("span", { class: "menu-ctx-ico", text: it.icono || "" })
+      )
+    )
+  );
+  const fondo = el("div", { class: "menu-ctx-fondo", onclick: () => cerrar() });
+  const capa = el("div", { class: "menu-ctx" }, fondo, copia, lista);
+  document.body.append(capa);
+
+  // Donde va cada cosa: la tarjeta crece un poco y el menu va debajo, del
+  // lado en el que esta la tarjeta. Si no cabe, todo sube (como en iOS).
+  const margen = 14;
+  const arriba = Math.max(margen, document.querySelector(".topbar")?.getBoundingClientRect().bottom || 0) + 6; // no tapar la isla ni la barra
+  const altoMenu = lista.offsetHeight, anchoMenu = lista.offsetWidth;
+  const escala = Math.min(1.04, (innerHeight - arriba - margen - altoMenu - 12) / r.height);
+  const altoTarjeta = r.height * escala;
+  let top = r.top + (r.height - altoTarjeta) / 2;
+  const sobra = top + altoTarjeta + 12 + altoMenu - (innerHeight - margen);
+  if (sobra > 0) top -= sobra;
+  top = Math.max(arriba, top);
+  const dy = top - (r.top + (r.height - altoTarjeta) / 2);
+  const izquierda = r.left + r.width / 2 < innerWidth / 2;
+  const x = izquierda ? Math.max(margen, r.left) : Math.min(innerWidth - margen - anchoMenu, r.right - anchoMenu);
+  lista.style.left = x + "px";
+  lista.style.top = top + altoTarjeta + 12 + "px";
+  lista.style.transformOrigin = izquierda ? "top left" : "top right";
+  copia.style.setProperty("--dy", dy + "px");
+  copia.style.setProperty("--escala", escala);
+
+  nodo.style.visibility = "hidden";
+  capa.getBoundingClientRect();
+  capa.classList.add("visible");
+
+  const teclas = (e) => e.key === "Escape" && cerrar();
+  document.addEventListener("keydown", teclas);
+  let cerrado = false;
+  function cerrar() {
+    if (cerrado) return;
+    cerrado = true;
+    document.removeEventListener("keydown", teclas);
+    capa.classList.remove("visible");
+    setTimeout(() => { capa.remove(); nodo.style.visibility = ""; }, 320);
+  }
+}
+
+// ---- Numeros que cuentan hasta su valor -------------------------------------
+export function contarHasta(nodo, final, duracion = 900) {
+  if (!(final > 1) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const t0 = performance.now();
+  const paso = (t) => {
+    const k = Math.min(1, (t - t0) / duracion);
+    nodo.textContent = String(Math.round(final * (1 - Math.pow(1 - k, 3))));
+    if (k < 1 && nodo.isConnected) requestAnimationFrame(paso);
+  };
+  nodo.textContent = "0";
+  requestAnimationFrame(paso);
+}

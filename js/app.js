@@ -16,11 +16,13 @@ import {
   cuentaAtras,
   diasDesde,
   diasHasta,
+  contarHasta,
 } from "./ui.js";
 import { renderLista } from "./vista-lista.js";
 import { renderRecuerdos, abrirRecuerdo } from "./vista-recuerdos.js";
 import { renderMapa } from "./vista-mapa.js";
 import { avisarCambios, recordarReacciones } from "./avisos.js";
+import { abrirResumenAnual, aniosConDatos } from "./resumen-anual.js";
 
 // ---- Estado global (mini "store") -----------------------------------
 
@@ -49,6 +51,7 @@ function iniciar(persona) {
   montarShell();
   const acciones = { irALista: () => (location.hash = "#lista"), abrirRecuerdo };
   subscribePlanes((planes, cambios) => {
+    if (store.cargando) marcarEntrada();
     store.set({ planes, cargando: false });
     quitarArranque();
     avisarCambios("planes", cambios, persona.id, acciones);
@@ -76,6 +79,7 @@ function quitarArranque() {
   const espera = Math.max(0, 1050 - performance.now());
   setTimeout(() => {
     capa.classList.add("saliendo");
+    if (vista) router();
     setTimeout(() => capa.remove(), 500);
   }, espera);
 }
@@ -193,23 +197,51 @@ function cambiarPersona() {
 
 // ---- Router -----------------------------------------------------
 
+let hashAnterior = null;
+
 function router() {
   const hash = location.hash || "#home";
-  document.querySelectorAll(".tab").forEach((a) =>
-    a.classList.toggle("activa", a.dataset.hash === hash)
-  );
-  // Contenedor nuevo por navegación: al vaciar `vista` el anterior se
-  // desconecta y sus suscripciones al store se cancelan (ver observarSalida).
-  limpiar(vista);
-  window.scrollTo(0, 0);
-  const cont = el("div", { class: "vista-inner" });
-  vista.append(cont);
+  const pintarVista = () => {
+    document.querySelectorAll(".tab").forEach((a) =>
+      a.classList.toggle("activa", a.dataset.hash === hash)
+    );
+    // Contenedor nuevo por navegación: al vaciar `vista` el anterior se
+    // desconecta y sus suscripciones al store se cancelan (ver observarSalida).
+    limpiar(vista);
+    window.scrollTo(0, 0);
+    marcarEntrada();
+    const cont = el("div", { class: "vista-inner" });
+    vista.append(cont);
 
-  if (hash === "#lista") renderLista(cont);
-  else if (hash === "#recuerdos") renderRecuerdos(cont);
-  else if (hash === "#mapa") renderMapa(cont);
-  else renderHome(cont);
+    if (hash === "#lista") renderLista(cont);
+    else if (hash === "#recuerdos") renderRecuerdos(cont);
+    else if (hash === "#mapa") renderMapa(cont);
+    else renderHome(cont);
+  };
+
+  // Al cambiar de pestaña, la vista vieja se funde con la nueva con un
+  // pequeño desplazamiento hacia el lado de la pestaña (View Transitions,
+  // Safari 18+). Las barras de arriba y abajo se quedan quietas.
+  const anterior = hashAnterior;
+  hashAnterior = hash;
+  if (anterior !== null && anterior !== hash && document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const orden = (h) => TABS.findIndex((t) => t.hash === h);
+    document.documentElement.dataset.dir = orden(hash) >= orden(anterior) ? "adelante" : "atras";
+    document.startViewTransition(pintarVista);
+  } else pintarVista();
 }
+
+// Durante un momento tras cambiar de vista, las tarjetas entran en cascada
+// (ver ".entrando" en el CSS). Fuera de ese momento, repintar por un cambio
+// en directo no vuelve a animar todo.
+let tEntrando;
+function marcarEntrada() {
+  const raiz = document.documentElement;
+  raiz.classList.add("entrando");
+  clearTimeout(tEntrando);
+  tEntrando = setTimeout(() => raiz.classList.remove("entrando"), 750);
+}
+const entrando = () => document.documentElement.classList.contains("entrando");
 
 // ---- Vista Inicio ---------------------------------------------
 
@@ -242,6 +274,7 @@ function renderHome(cont) {
         contador(store.recuerdos.length, "recuerdos")
       )
     );
+    if (entrando()) cont.querySelectorAll(".contador-n").forEach((n) => contarHasta(n, +n.textContent));
 
     // "Un día como hoy" — recuerdos de la misma fecha en años anteriores.
     const memoria = unDiaComoHoy();
@@ -270,7 +303,10 @@ function renderHome(cont) {
       .filter((p) => p.fechaObjetivo)
       .sort((a, b) => a.fechaObjetivo.localeCompare(b.fechaObjetivo));
     if (proximos.length) {
-      cont.append(heroCuenta(proximos[0]));
+      const hero = heroCuenta(proximos[0]);
+      cont.append(hero);
+      const n = hero.querySelector(".hero-cuenta-numero");
+      if (entrando() && /^\d+$/.test(n.textContent)) contarHasta(n, +n.textContent, 1100);
       const resto = proximos.slice(1, 4);
       if (resto.length) {
         cont.append(
@@ -289,6 +325,22 @@ function renderHome(cont) {
           )
         );
       }
+    }
+
+    // "Nuestro año": el resumen en historias del año más reciente con datos
+    const anios = aniosConDatos();
+    if (anios.length) {
+      const anio = anios[0];
+      cont.append(
+        el("button", { type: "button", class: "tarjeta-anio", onclick: () => abrirResumenAnual(anio) },
+          el("span", { class: "tarjeta-anio-txt" },
+            el("span", { class: "tarjeta-anio-et", text: "✨ Vuestro resumen" }),
+            el("strong", { text: `Nuestro ${anio}` }),
+            el("span", { text: "Vuestro año, en historias →" })
+          ),
+          el("img", { src: "icons/monograma.png", alt: "" })
+        )
+      );
     }
 
     // Último recuerdo
@@ -327,9 +379,6 @@ function renderHome(cont) {
       }
       if (store.recuerdos.length) {
         acciones.append(el("button", { class: "btn-sorpresa", type: "button", onclick: recuerdoAlAzar }, "🎞️ Recuerdo al azar"));
-      }
-      if (hechos.length || store.recuerdos.length) {
-        acciones.append(el("button", { class: "btn-sorpresa", type: "button", onclick: verResumen }, "📊 Resumen"));
       }
       if (acciones.childNodes.length) cont.append(acciones);
     }
@@ -431,59 +480,6 @@ function mostrarRecuerdoAzar() {
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: mostrarRecuerdoAzar }, "Otro"),
       el("a", { class: "btn-primario", href: "#recuerdos", onclick: cerrarModal }, "Ver todos")
-    )
-  );
-  abrirModal(cont);
-}
-
-// ---- Resumen del año --------------------------------------------------
-
-function calcularResumen() {
-  const hechos = store.planes.filter((p) => p.estado === "hecho");
-  const porCategoria = {};
-  hechos.forEach((p) => {
-    if (p.categoria) porCategoria[p.categoria] = (porCategoria[p.categoria] || 0) + 1;
-  });
-  const [catTopId, catTopN] =
-    Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0] || [];
-  const catTop = CATEGORIAS.find((c) => c.id === catTopId);
-
-  const totalFotos = store.recuerdos.reduce((n, r) => n + (r.fotos?.length || 0), 0);
-  const sitios = new Set(
-    store.recuerdos.map((r) => r.ubicacion?.texto?.trim().toLowerCase()).filter(Boolean)
-  );
-
-  const conFecha = store.recuerdos
-    .map((r) => ({ r, f: fechaTS(r.creadoEn) }))
-    .filter(({ f }) => f)
-    .sort((a, b) => a.f - b.f);
-  const primero = conFecha[0]?.r || null;
-
-  const masQuerido = store.recuerdos
-    .map((r) => ({ r, likes: Object.values(r.reacciones || {}).filter(Boolean).length }))
-    .filter(({ likes }) => likes > 0)
-    .sort((a, b) => b.likes - a.likes)[0];
-
-  return { totalHechos: hechos.length, catTop, catTopN, totalFotos, sitiosN: sitios.size, primero, masQuerido };
-}
-
-function verResumen() {
-  const r = calcularResumen();
-  const cont = el("div", { class: "resumen" },
-    el("h3", { text: "📊 Vuestro resumen" }),
-    el("div", { class: "contadores" },
-      contador(r.totalHechos, "planes cumplidos"),
-      contador(store.recuerdos.length, "recuerdos"),
-      contador(r.totalFotos, "fotos")
-    ),
-    el("ul", { class: "resumen-lista" },
-      r.catTop && el("li", { text: `${r.catTop.emoji} Vuestra categoría favorita: ${r.catTop.etiqueta} (${r.catTopN} ${r.catTopN === 1 ? "vez" : "veces"})` }),
-      r.sitiosN > 0 && el("li", { text: `📍 ${r.sitiosN} ${r.sitiosN === 1 ? "sitio distinto" : "sitios distintos"} con recuerdos` }),
-      r.primero && el("li", { text: `🌱 Vuestro primer recuerdo: ${fechaLegible(fechaTS(r.primero.creadoEn))}` }),
-      r.masQuerido && el("li", { text: `❤️ El recuerdo más querido: "${r.masQuerido.r.titulo}" (${r.masQuerido.likes} ❤️)` })
-    ),
-    el("div", { class: "form-acciones" },
-      el("button", { type: "button", class: "btn-primario", onclick: cerrarModal }, "Cerrar")
     )
   );
   abrirModal(cont);

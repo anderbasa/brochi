@@ -12,6 +12,9 @@ import { store, observarSalida } from "./app.js";
 import { comprimirVarias } from "./imagenes.js";
 import { compartirRecuerdo } from "./compartir.js";
 import { abrirVisor } from "./visor.js";
+import { campoUbicacion, elegirUbicacion } from "./selector-mapa.js";
+import { miniMapa, PIN_SVG } from "./mapa-comun.js";
+import { verEnMapa } from "./vista-mapa.js";
 import {
   el,
   limpiar,
@@ -27,11 +30,13 @@ import {
   vibrar,
   skeleton,
   explosionCorazones,
+  menuContextual,
 } from "./ui.js";
 
 let busqueda = "";
 
 export function renderRecuerdos(cont) {
+  let conocidos = null; // ids ya pintados: solo se animan los que llegan nuevos
   const pintar = () => {
     // Igual que en Lista: conserva el foco del buscador al reconstruir el DOM.
     const activo = document.activeElement;
@@ -64,8 +69,9 @@ export function renderRecuerdos(cont) {
     } else {
       cont.append(
         el("div", { class: "grid-recuerdos" },
-          ...filtrados.map((r) =>
-            el("button", { class: "cr", onclick: () => detalle(r.id) },
+          ...filtrados.map((r, i) => {
+            const nuevo = conocidos && !conocidos.has(r.id);
+            const tarjeta = el("button", { class: "cr" + (nuevo ? " nuevo" : ""), style: `--i:${i}`, onclick: () => detalle(r.id) },
               r.fotos && r.fotos[0]
                 ? el("img", { src: r.fotos[0], alt: "", loading: "lazy" })
                 : el("div", { class: "sin-foto", text: "📸" }),
@@ -75,8 +81,10 @@ export function renderRecuerdos(cont) {
                 el("span", { text: fechaRelativa(r.creadoEn) }),
                 r.ubicacion?.texto && el("span", { class: "cr-lugar", text: "📍 " + r.ubicacion.texto })
               )
-            )
-          )
+            );
+            menuContextual(tarjeta, () => opcionesRecuerdo(r, tarjeta));
+            return tarjeta;
+          })
         )
       );
     }
@@ -88,6 +96,7 @@ export function renderRecuerdos(cont) {
         if (cursor != null) nuevo.setSelectionRange(cursor, cursor);
       }
     }
+    if (!store.cargando) conocidos = new Set(store.recuerdos.map((r) => r.id));
   };
   pintar();
   const off = store.onChange(pintar);
@@ -113,6 +122,27 @@ function campoBusqueda(pintar) {
   });
   input.addEventListener("input", () => { busqueda = input.value; pintar(); });
   return el("div", { class: "barra-filtro" }, input);
+}
+
+// Menu al mantener pulsada una tarjeta
+function opcionesRecuerdo(r, tarjeta) {
+  const leGusta = !!r.reacciones?.[store.persona.id];
+  return [
+    { texto: "Ver recuerdo", icono: "👀", accion: () => detalle(r.id) },
+    {
+      texto: leGusta ? "Quitar me gusta" : "Me gusta",
+      icono: leGusta ? "🤍" : "❤️",
+      accion: () => {
+        if (!leGusta) explosionCorazones(tarjeta.querySelector(".corazon-mini") || tarjeta, 12);
+        alCorazon(r);
+      },
+    },
+    navigator.share && { texto: "Compartir", icono: "📤", accion: () => compartirRecuerdo(r) },
+    r.ubicacion?.lat != null
+      ? { texto: "Ver en el mapa", icono: "🗺️", accion: () => verEnMapa(r.id) }
+      : { texto: "Poner en el mapa", icono: "📍", accion: () => ponerSitio(r) },
+    { texto: "Editar", icono: "✏️", accion: () => formEditar(r) },
+  ];
 }
 
 // ---- Reacción ❤️ ----------------------------------------------------
@@ -180,6 +210,8 @@ export function abrirRecuerdo(id) {
   setTimeout(() => detalle(id), 60);
 }
 
+export { detalle as verRecuerdo };
+
 function detalle(id) {
   const r = store.recuerdos.find((x) => x.id === id);
   if (!r) return;
@@ -213,13 +245,7 @@ function detalle(id) {
     (r.fotos && r.fotos.length) ? galeria : el("p", { class: "sub", text: "Sin fotos todavía." }),
     r.nota && el("p", { class: "detalle-nota", text: r.nota }),
     r.ubicacion?.texto && el("p", { class: "detalle-lugar", text: "📍 " + r.ubicacion.texto }),
-    (r.ubicacion?.lat != null) && el("a", {
-      class: "enlace-mapa",
-      href: `https://www.openstreetmap.org/?mlat=${r.ubicacion.lat}&mlon=${r.ubicacion.lng}#map=16/${r.ubicacion.lat}/${r.ubicacion.lng}`,
-      target: "_blank",
-      rel: "noopener",
-      text: "Ver en el mapa",
-    }),
+    bloqueSitio(r),
     el("div", { class: "detalle-acciones" },
       navigator.share && el("button", { class: "btn-primario", onclick: () => { vibrar(); compartirRecuerdo(r); } }, "📤 Compartir"),
       el("button", { class: "btn-foto", onclick: () => formEditar(r) }, "✏️ Editar / añadir fotos"),
@@ -236,12 +262,51 @@ function detalle(id) {
   abrirModal(cont);
 }
 
+// Mini mapa con el pin (toca para ir al Mapa de la app) y "Cómo llegar",
+// que en el iPhone abre la app Mapas. Sin sitio: boton para ponerlo.
+function bloqueSitio(r) {
+  const u = r.ubicacion;
+  if (u?.lat == null) {
+    return el("button", { type: "button", class: "btn-foto btn-poner-sitio", onclick: () => ponerSitio(r) }, "📍 Poner en el mapa");
+  }
+  const mini = miniMapa(u.lat, u.lng, 14);
+  mini.append(el("div", { class: "mini-mapa-pin", html: PIN_SVG }));
+  return el("div", { class: "detalle-sitio" },
+    el("button", { type: "button", class: "geo-vista-btn", "aria-label": "Ver en nuestro mapa", onclick: () => verEnMapa(r.id) }, mini),
+    el("div", { class: "detalle-sitio-acciones" },
+      el("button", { type: "button", class: "btn-plano", onclick: () => verEnMapa(r.id) }, "🗺️ Ver en nuestro mapa"),
+      el("a", {
+        class: "btn-plano",
+        href: `https://maps.apple.com/?ll=${u.lat},${u.lng}&q=${encodeURIComponent(u.texto || r.titulo)}`,
+        target: "_blank",
+        rel: "noopener",
+      }, "🧭 Cómo llegar")
+    )
+  );
+}
+
+async function ponerSitio(r) {
+  const elegido = await elegirUbicacion({ titulo: r.titulo });
+  if (!elegido) return;
+  try {
+    await editarRecuerdo(r.id, {
+      ubicacion: { texto: r.ubicacion?.texto || elegido.texto || "", lat: elegido.lat, lng: elegido.lng },
+    });
+    aviso("¡Ya está en el mapa! 📍");
+    detalle(r.id);
+  } catch (err) {
+    console.error(err);
+    aviso(mensajeError(err), "error");
+  }
+}
+
 // ---- Editar ------------------------------------------------------
 
 function formEditar(r) {
   const titulo = el("input", { type: "text", maxlength: 120, value: r.titulo });
   const nota = el("textarea", { rows: 4, maxlength: 1000, placeholder: "Nota del recuerdo" }, r.nota || "");
   const lugar = el("input", { type: "text", maxlength: 160, value: r.ubicacion?.texto || "", placeholder: "Lugar (texto libre)" });
+  const sitio = campoUbicacion({ inicial: r.ubicacion, lugar });
   const fotos = campoFotos({ multiple: true, etiqueta: "Añadir más fotos" });
   const guardar = el("button", { type: "submit", class: "btn-primario" }, "Guardar");
 
@@ -250,6 +315,7 @@ function formEditar(r) {
     campoL("Título", titulo),
     campoL("Nota", nota),
     campoL("Lugar", lugar),
+    sitio.nodo,
     campoL("Fotos nuevas", fotos.nodo),
     el("div", { class: "form-acciones" },
       el("button", { type: "button", class: "btn-plano", onclick: () => detalle(r.id) }, "Cancelar"),
@@ -264,9 +330,9 @@ function formEditar(r) {
     guardar.textContent = "Guardando…";
     try {
       const fotosBlobs = await comprimirVarias(fotos.archivos());
-      const ubic = r.ubicacion || {};
-      const ubicacion = lugar.value.trim() || ubic.lat != null
-        ? { texto: lugar.value.trim(), lat: ubic.lat ?? null, lng: ubic.lng ?? null }
+      const coords = sitio.valor();
+      const ubicacion = lugar.value.trim() || coords
+        ? { texto: lugar.value.trim(), lat: coords?.lat ?? null, lng: coords?.lng ?? null }
         : null;
       await editarRecuerdo(r.id, { titulo: titulo.value, nota: nota.value, ubicacion, fotosBlobs }, r.fotos);
       detalle(r.id); // vuelve al detalle ya actualizado, como en iOS
@@ -283,7 +349,8 @@ function formEditar(r) {
 }
 
 function campoL(etiqueta, control) {
-  return el("label", { class: "campo" }, el("span", { class: "campo-et", text: etiqueta }), control);
+  const tag = control.matches?.("input, textarea, select") ? "label" : "div"; // ver campo() en vista-lista.js
+  return el(tag, { class: "campo" }, el("span", { class: "campo-et", text: etiqueta }), control);
 }
 
 function nombre(personaId) {

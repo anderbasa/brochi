@@ -66,6 +66,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"
+  integrity="sha512-mQ77VzAakzdpWdgfL/lM1ksNy89uFgibRQANsNneSTMD/bj0Y/8+94XMwYhnbzx8eki2hrbPpDm0vD0CiT2lcg==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
@@ -82,6 +84,9 @@
   // Red de seguridad: si algo revienta (aquí o en cualquier módulo), se ve un
   // aviso con el error en vez de quedarse la pantalla en blanco sin pistas.
   function mostrarErrorFatal(msg) {
+    // Con la app ya en marcha, un fallo puntual (un gesto, una animacion) no
+    // debe tirar la pantalla entera: se apunta y ya.
+    if (document.querySelector(".tabbar")) { console.error(msg); return; }
     var arranque = document.getElementById("arranque");
     if (arranque) arranque.remove();
     var app = document.getElementById("app");
@@ -106,6 +111,8 @@
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"
+  integrity="sha512-OFs3W4DIZ5ZkrDhBFtsCP6JXtMEDGmhl0QPlmWYBJay40TT1n3gt2Xuw8Pf/iezgW9CdabjkNChRqozl/YADmg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="js/app.js"></script>
 <script>
   if ("serviceWorker" in navigator) {
